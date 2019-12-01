@@ -1,0 +1,70 @@
+import java.text.SimpleDateFormat
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.github.townsfolk:gradle-release:1.2'
+        classpath 'com.netflix.nebula:gradle-ospackage-plugin:1.12.7'
+        classpath 'com.google.guava:guava:14.0.1'
+    }
+    
+    ant.propertyfile(file: "src/main/resources/version.properties") {
+        entry( key: "devsm.build.version", value: "git describe".execute().text.replaceAll('-','_').trim() - '-SNAPSHOT')
+        entry( key: "devsm.build.date", value: new SimpleDateFormat("yyMMddHHmm").format(new Date()))
+    }
+}
+
+plugins {
+    id 'groovy'
+    id 'java'
+    id 'release'
+}
+
+group 'com.fan'
+description 'Test project for Revolut'
+version = "git describe".execute().text.replaceAll('-','_').trim() - '-SNAPSHOT'
+
+sourceCompatibility = 1.11
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.google.inject:guice:4.1.0'
+
+    implementation 'org.apache.commons:commons-lang3:3.9'
+    implementation 'org.projectlombok:lombok:1.18.10'
+
+    // Jackson
+    ['jackson-core', 'jackson-databind', 'jackson-annotations'].each {
+        compile "com.fasterxml.jackson.core:$it:2.10.1"
+    }
+
+    // Json providers
+    compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.10.1"
+
+    // CXF
+    ['cxf-rt-frontend-jaxrs', 'cxf-rt-rs-service-description'].each {
+        compile "org.apache.cxf:$it:3.3.4"
+    }
+
+    compile "ch.qos.logback:logback-classic:1.2.3"
+
+    testCompile 'org.codehaus.groovy:groovy-all:2.3.11'
+//    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation 'org.testng:testng:7.0.0'
+
+    ['cxf-rt-transports-http-jetty', 'cxf-rt-rs-client'/*, 'cxf-rt-transports-local'*/, 'cxf-rt-transports-http-hc'].each {
+        testCompile "org.apache.cxf:$it:3.3.4"
+    }
+
+    test {
+        useTestNG()
+        testLogging.exceptionFormat = "full"
+        dependsOn cleanTest
+    }
+}
