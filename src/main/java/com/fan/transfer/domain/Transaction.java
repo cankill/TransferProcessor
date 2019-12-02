@@ -6,7 +6,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Value
-public class Transaction {
+public class Transaction implements HasId {
+    private String id;
     private String from;
     private String to;
     private BigDecimal amount;

@@ -7,9 +7,9 @@ import java.util.Currency;
 import java.util.List;
 
 @Value
-public class Account {
+public class Account implements HasId {
     private String id;
     private Currency currency;
     private BigDecimal balance;
-    private List<Transaction> transactions;
+    private List<Ref> transactions;
 }
