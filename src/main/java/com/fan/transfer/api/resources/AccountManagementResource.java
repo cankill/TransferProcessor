@@ -5,9 +5,9 @@ import com.fan.transfer.api.model.TransferRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
-@Path("/accauntManagement")
+@Path("/accountManagement")
 @Produces({"application/json"})
-public interface AccauntManagementResource {
+public interface AccountManagementResource {
     @GET
     @Path("/balance/{userId}")
     Response getBalance(@PathParam("userId") String userId);

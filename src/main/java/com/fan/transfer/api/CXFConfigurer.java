@@ -1,6 +1,6 @@
 package com.fan.transfer.api;
 
-import com.fan.transfer.api.resources.AccauntManagementResource;
+import com.fan.transfer.api.resources.AccountManagementResource;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.inject.Inject;
 import lombok.Getter;
@@ -15,10 +15,10 @@ public class CXFConfigurer {
     private Server server;
 
     @Inject
-    public CXFConfigurer(AccauntManagementResource accauntManager,
+    public CXFConfigurer(AccountManagementResource accountManager,
                          JacksonJsonProvider jacksonJsonProvider) {
         JAXRSServerFactoryBean factoryBean = new JAXRSServerFactoryBean();
-        factoryBean.setResourceProvider(new SingletonResourceProvider(accauntManager));
+        factoryBean.setResourceProvider(new SingletonResourceProvider(accountManager));
         factoryBean.setAddress("http://localhost:8080/v1");
         factoryBean.setProviders(List.of(jacksonJsonProvider));
 

@@ -4,9 +4,9 @@ import com.fan.transfer.domain.HasId;
 import com.fan.transfer.domain.Ref;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class InMemoryTable<T extends HasId>  implements Repository<T> {
+    private final List<String> EXCLUDE_FIELDS_FOR_UPDATE = List.of("id");
     private ConcurrentHashMap<String, T> table = new ConcurrentHashMap<>();
 
     private ObjectMapper objectMapper;
@@ -69,7 +70,8 @@ public class InMemoryTable<T extends HasId>  implements Repository<T> {
             return false;
         }
         
-        JsonNode nodeNew = objectMapper.valueToTree(entity);
+        ObjectNode nodeNew = objectMapper.valueToTree(entity);
+        nodeNew.remove(EXCLUDE_FIELDS_FOR_UPDATE);
 
         return table.computeIfPresent(entityId, (key, currentEntity) -> {
             ObjectReader updater = objectMapper.readerForUpdating(currentEntity);

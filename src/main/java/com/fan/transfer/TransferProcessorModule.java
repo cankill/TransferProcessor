@@ -1,7 +1,8 @@
 package com.fan.transfer;
 
-import com.fan.transfer.api.resources.AccauntManagementResource;
-import com.fan.transfer.api.resources.AccauntManagementResourceImpl;
+import com.fan.transfer.api.CXFConfigurer;
+import com.fan.transfer.api.resources.AccountManagementResource;
+import com.fan.transfer.api.resources.AccountManagementResourceImpl;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.inject.AbstractModule;
+import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
@@ -20,8 +22,8 @@ public class TransferProcessorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    AccauntManagementResource provideAccauntManagementResource() {
-        return new AccauntManagementResourceImpl();
+    AccountManagementResource provideAccountManagementResource(Injector injector) {
+        return injector.getInstance(AccountManagementResourceImpl.class);
     }
 
     @Provides

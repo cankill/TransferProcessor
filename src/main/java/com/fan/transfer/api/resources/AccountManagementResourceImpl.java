@@ -5,7 +5,7 @@ import com.fan.transfer.domain.User;
 
 import javax.ws.rs.core.Response;
 
-public class AccauntManagementResourceImpl implements AccauntManagementResource {
+public class AccountManagementResourceImpl implements AccountManagementResource {
     @Override
     public Response getBalance(String userId) {
         User user = User.builder().id(userId).build();
