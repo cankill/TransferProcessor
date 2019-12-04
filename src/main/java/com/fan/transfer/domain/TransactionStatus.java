@@ -1,6 +1,6 @@
 package com.fan.transfer.domain;
 
-enum TransactionStatus {
+public enum TransactionStatus {
     IN_PROGRESS,
     SUCCESSFUL,
     FAILED

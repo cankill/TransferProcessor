@@ -1,5 +1,5 @@
 package com.fan.transfer.domain;
 
-public interface HasId {
-    String getId();
+public interface HasId<T extends IsId> {
+    T getId ();
 }

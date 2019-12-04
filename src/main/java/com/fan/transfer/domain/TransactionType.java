@@ -1,6 +1,7 @@
 package com.fan.transfer.domain;
 
-enum TransactionType {
+public enum TransactionType {
     CREDIT,
-    DEBIT
+    DEBIT,
+    TM
 }

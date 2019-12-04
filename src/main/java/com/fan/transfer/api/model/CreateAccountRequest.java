@@ -1,18 +1,18 @@
 package com.fan.transfer.api.model;
 
-import com.fan.transfer.domain.Account;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
 import java.math.BigDecimal;
+import java.util.Currency;
 
 @Value
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TransferRequest {
-    private final Account.Id from;
-    private final Account.Id to;
-    private final BigDecimal amount;
+public final class CreateAccountRequest {
+    private final Currency currency;
+    private final BigDecimal balance;
 }

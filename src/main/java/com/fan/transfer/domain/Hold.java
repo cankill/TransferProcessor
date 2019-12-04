@@ -5,14 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
+import java.math.BigDecimal;
+
 @Value
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class User implements HasId<User.Id> {
-    private final User.Id id;
-    private final String name;
-    private final String email;
-    private final String phone;
+public class Hold {
+    private final Id id;
+    private final Transaction.Id transactionId;
+    private final BigDecimal amount;
 
     @Value
     @Builder
@@ -20,8 +21,8 @@ public final class User implements HasId<User.Id> {
     public static final class Id implements IsId {
         private final String value;
 
-        public static Id valueOf (String value) {
-            return Id.builder().value(value).build();
+        public static Hold.Id valueOf (String value) {
+            return Hold.Id.builder().value(value).build();
         }
     }
 }

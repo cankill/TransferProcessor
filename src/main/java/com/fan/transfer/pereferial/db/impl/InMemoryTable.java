@@ -1,6 +1,7 @@
 package com.fan.transfer.pereferial.db.impl;
 
 import com.fan.transfer.domain.HasId;
+import com.fan.transfer.domain.IsId;
 import com.fan.transfer.domain.Ref;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -17,26 +18,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class InMemoryTable<T extends HasId>  implements Repository<T> {
-    private final List<String> EXCLUDE_FIELDS_FOR_UPDATE = List.of("id");
+public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Repository<I, T> {
+    private static final List<String> EXCLUDE_FIELDS_FOR_UPDATE = List.of("id");
     private ConcurrentHashMap<String, T> table = new ConcurrentHashMap<>();
 
     private ObjectMapper objectMapper;
-    private Class<?> clazz;
-    
-    public InMemoryTable(Class<?> clazz) {
+
+    public InMemoryTable () {
         this.objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     @Override
-    public T get(String entityId) {
-        return table.get(entityId);
+    public T get (I entityId) {
+        return entityId == null || entityId.getValue() == null
+                ? null
+                : table.get(entityId.getValue());
     }
 
     @Override
-    public List<T> getAllByRefs(List<Ref> entityRefs) {
-        if(entityRefs == null || entityRefs.size() == 0) {
+    public List<T> getAllByRefs (List<Ref<I>> entityRefs) {
+        if (entityRefs == null || entityRefs.isEmpty()) {
             return new LinkedList<>();
         }
 
@@ -44,36 +46,41 @@ public class InMemoryTable<T extends HasId>  implements Repository<T> {
     }
 
     @Override
-    public List<T> getAll(List<String> entityIds) {
-        if(entityIds == null || entityIds.size() == 0) {
+    public List<T> getAll (List<I> entityIds) {
+        if (entityIds == null || entityIds.isEmpty()) {
             return new LinkedList<>();
         }
 
         return entityIds.stream()
-                        .map(this::get)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+                .map(this::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public boolean add(T entity) {
-        if(entity == null || entity.getId() == null) {
-            return false;
-        }
-
-        return table.putIfAbsent(entity.getId(), entity) == null;
+    public List<T> getAll () {
+        return new LinkedList<>(table.values());
     }
 
     @Override
-    public boolean update(String entityId, T entity) {
-        if(entityId == null || entity == null) {
+    public boolean add (T entity) {
+        if (entity == null || entity.getId() == null) {
             return false;
         }
-        
+
+        return table.putIfAbsent(entity.getId().getValue(), entity) == null;
+    }
+
+    @Override
+    public boolean update (I entityId, T entity) {
+        if (entityId == null || entityId.getValue() == null || entity == null) {
+            return false;
+        }
+
         ObjectNode nodeNew = objectMapper.valueToTree(entity);
         nodeNew.remove(EXCLUDE_FIELDS_FOR_UPDATE);
 
-        return table.computeIfPresent(entityId, (key, currentEntity) -> {
+        return table.computeIfPresent(entityId.getValue(), (key, currentEntity) -> {
             ObjectReader updater = objectMapper.readerForUpdating(currentEntity);
             try {
                 return updater.readValue(nodeNew);
@@ -86,16 +93,16 @@ public class InMemoryTable<T extends HasId>  implements Repository<T> {
     }
 
     @Override
-    public boolean remove(String entityId) {
-        if(entityId == null) {
+    public boolean remove (I entityId) {
+        if (entityId == null || entityId.getValue() == null) {
             return false;
         }
 
-        return table.remove(entityId) != null;
+        return table.remove(entityId.getValue()) != null;
     }
 
     @Override
-    public void removeAll() {
+    public void removeAll () {
         table.clear();
     }
 }

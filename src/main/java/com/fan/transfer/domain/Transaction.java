@@ -1,22 +1,30 @@
 package com.fan.transfer.domain;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Value
+@Data
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Transaction implements HasId {
-    private String id;
-    private String from;
-    private String to;
+public final class Transaction implements HasId<Transaction.Id> {
+    private Id id;
+    private Account.Id from;
+    private Account.Id to;
     private BigDecimal amount;
     private TransactionType type;
     private LocalDateTime dateTime;
     private TransactionStatus status;
+
+    @Value
+    @Builder
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class Id implements IsId {
+        private final String value;
+
+        public static Transaction.Id valueOf (String value) {
+            return Transaction.Id.builder().value(value).build();
+        }
+    }
 }

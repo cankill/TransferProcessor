@@ -8,16 +8,27 @@ import lombok.Builder;
 import lombok.Value;
 
 import java.math.BigDecimal;
-import java.util.Currency;
-import java.util.List;
+import java.util.*;
 
 @Value
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Account implements HasId {
-    private final String id;
+public final class Account implements HasId<Account.Id> {
+    private final Account.Id id;
+    private final User.Id userId;
     private final Currency currency;
     private final BigDecimal balance;
     @JsonSetter(nulls = Nulls.AS_EMPTY)
-    private final List<Ref> transactions;
+    private final List<Hold> hold = new LinkedList<>();
+
+    @Value
+    @Builder
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class Id implements IsId {
+        private final String value;
+
+        public static Id valueOf (String value) {
+            return Id.builder().value(value).build();
+        }
+    }
 }

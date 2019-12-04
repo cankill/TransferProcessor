@@ -1,15 +1,14 @@
 package com.fan.transfer
 
 import com.fan.transfer.domain.User
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.testng.annotations.Test
-import static org.assertj.core.api.Assertions.*;
+import spock.lang.Specification
+import spock.lang.Unroll
 
-class TestUser {
-
-    @Test
-    public void testUser() {
+@Unroll
+class TestUser extends Specification {
+    def testUser() {
+        setup:
         def jsonString = '''
                     {
                         "id": "10735069",
@@ -20,12 +19,19 @@ class TestUser {
                     }
                     '''
         def objectMapper = new ObjectMapper()
-//        objectMapper.findAndRegisterModules();
+        def createdUser = objectMapper.readValue(jsonString, User.class)
 
-        def user = objectMapper.readValue(jsonString, User.class)
+        expect:
+        createdUser == expectedUser
 
-        assertThat(user).isNotNull()
-
-
+        where:
+        expectedUser << [
+                User.builder()
+                        .id(User.Id.builder().value("10735069").build())
+                        .name("Andrew")
+                        .email("filyaniny@gmail.com")
+                        .phone("+35797648671")
+                        .build()
+        ]
     }
 }
