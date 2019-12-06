@@ -7,7 +7,6 @@ import lombok.Value;
 
 @Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class CreateUserResponse {
-    private final String id;
+public class CreateUserResponse {
+    private String id;
 }

@@ -2,7 +2,6 @@ package com.fan.transfer.pereferial.db.impl;
 
 import com.fan.transfer.domain.HasId;
 import com.fan.transfer.domain.IsId;
-import com.fan.transfer.domain.Ref;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,15 +33,6 @@ public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Reposi
         return entityId == null || entityId.getValue() == null
                 ? null
                 : table.get(entityId.getValue());
-    }
-
-    @Override
-    public List<T> getAllByRefs (List<Ref<I>> entityRefs) {
-        if (entityRefs == null || entityRefs.isEmpty()) {
-            return new LinkedList<>();
-        }
-
-        return getAll(entityRefs.stream().map(Ref::getId).collect(Collectors.toList()));
     }
 
     @Override

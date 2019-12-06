@@ -7,7 +7,6 @@ import lombok.Value;
 
 @Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ErrorResponse {
-    private final String error;
+public class ErrorResponse {
+    private String error;
 }

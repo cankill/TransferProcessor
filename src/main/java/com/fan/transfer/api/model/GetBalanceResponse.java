@@ -7,8 +7,7 @@ import lombok.Value;
 
 @Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class GetBalanceResponse {
-    private final String accountId;
-    private final String balance;
+public class GetBalanceResponse {
+    private String accountId;
+    private String balance;
 }

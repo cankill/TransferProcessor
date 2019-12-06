@@ -10,9 +10,8 @@ import java.math.BigDecimal;
 
 @Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TransferRequest {
-    private final Account.Id from;
-    private final Account.Id to;
-    private final BigDecimal amount;
+public class TransferRequest {
+    private Account.Id from;
+    private Account.Id to;
+    private BigDecimal amount;
 }

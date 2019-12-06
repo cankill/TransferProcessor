@@ -5,10 +5,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Transaction implements HasId<Transaction.Id> {
+public class Transaction implements HasId<Transaction.Id> {
     private Id id;
     private Account.Id from;
     private Account.Id to;
@@ -19,12 +18,11 @@ public final class Transaction implements HasId<Transaction.Id> {
 
     @Value
     @Builder
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Id implements IsId {
-        private final String value;
+    public static class Id implements IsId {
+        private String value;
 
-        public static Transaction.Id valueOf (String value) {
-            return Transaction.Id.builder().value(value).build();
+        public static Id valueOf (String value) {
+            return new Id(value);
         }
     }
 }

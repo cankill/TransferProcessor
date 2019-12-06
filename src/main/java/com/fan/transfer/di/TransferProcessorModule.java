@@ -12,6 +12,8 @@ import com.fan.transfer.domain.User;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.pereferial.db.impl.InMemoryTable;
 import com.fan.transfer.services.*;
+import com.fan.transfer.services.tm.TransferCommandManager;
+import com.fan.transfer.services.tm.TransferCommandManagerImpl;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -94,9 +96,9 @@ public class TransferProcessorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    TransactionCoordinator provideTransactionCoordinator(Injector inject) {
-        TransactionCoordinator tc = inject.getInstance(TransactionCoordinatorImpl.class);
-        tc.init();
+    TransferCommandManager provideTransactionCoordinator(Injector inject) {
+        TransferCommandManagerImpl tc = inject.getInstance(TransferCommandManagerImpl.class);
+        tc.init(16);
         return tc;
     }
 

@@ -7,9 +7,8 @@ import lombok.Value;
 
 @Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class CreateUserRequest {
-    private final String name;
-    private final String email;
-    private final String phone;
+public class CreateUserRequest {
+    private String name;
+    private String email;
+    private String phone;
 }

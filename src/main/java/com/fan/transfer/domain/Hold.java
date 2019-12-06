@@ -1,28 +1,20 @@
 package com.fan.transfer.domain;
 
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
 import java.math.BigDecimal;
+import java.util.function.Predicate;
 
 @Value
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor
 public class Hold {
-    private final Id id;
-    private final Transaction.Id transactionId;
-    private final BigDecimal amount;
+    private Transaction.Id transactionId;
+    private BigDecimal amount;
 
-    @Value
-    @Builder
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Id implements IsId {
-        private final String value;
-
-        public static Hold.Id valueOf (String value) {
-            return Hold.Id.builder().value(value).build();
-        }
+    public static Predicate<Hold> byId (Transaction.Id id) {
+        return hold -> hold.getTransactionId().equals(id);
     }
 }
