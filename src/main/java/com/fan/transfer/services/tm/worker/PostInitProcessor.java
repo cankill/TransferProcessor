@@ -28,6 +28,7 @@ public class PostInitProcessor implements Processor<SuccessInitReply> {
      * 1. Create a Hold for transactionId
      * 2.1. Decrease A Balance by amount on Hold for Credit
      * 2.2. Leave A Balance unchanged for Debit
+     * All errors processing skiped for simplicity
      * @param command Transfer command to execute in a processor, contains all parameters
      * @return ReplyI object
      */
@@ -42,9 +43,8 @@ public class PostInitProcessor implements Processor<SuccessInitReply> {
             var newParentTransaction = Transaction.builder().children(newChildren).build();
             if(transactionRepository.update(parentTransactionId, newParentTransaction)) {
                 if(newChildren.size() == 2) {
-                    return SuccessInitReply.builder()
-                                           .transactionId(parentTransactionId)
-                                           .build();
+                    log.debug(String.format("Transaction '%s' finished", parentTransactionId));
+                    return SuccessInitReply.builder().transactionId(parentTransactionId).build();
                 } else {
                     var error = String.format("Waiting to all participant to finish. Wait for: '%d'", 2 - newChildren.size());
                     log.debug(error);
