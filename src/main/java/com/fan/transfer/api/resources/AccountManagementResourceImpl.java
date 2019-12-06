@@ -6,10 +6,12 @@ import com.fan.transfer.api.mapping.GetBalanceResponseMapper;
 import com.fan.transfer.api.model.CreateAccountRequest;
 import com.fan.transfer.api.model.TransferRequest;
 import com.fan.transfer.domain.Account;
+import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.domain.User;
 import com.fan.transfer.services.AccountCommandManager;
 import com.fan.transfer.services.AccountQueryManager;
 import com.fan.transfer.services.ValidationService;
+import com.fan.transfer.services.tm.TransferCommandManager;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 
@@ -25,6 +27,8 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
 
     private AccountQueryManager accountQueryManager;
 
+    private TransferCommandManager transferCommandManager;
+
     private ValidationService validationService;
 
     private User user;
@@ -33,10 +37,12 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
     AccountManagementResourceImpl(AccountCommandManager accountCommandManager,
                                   AccountQueryManager accountQueryManager,
                                   ValidationService validationService,
+                                  TransferCommandManager transferCommandManager,
                                   @Assisted User user) {
         this.accountCommandManager = accountCommandManager;
         this.accountQueryManager = accountQueryManager;
         this.validationService = validationService;
+        this.transferCommandManager = transferCommandManager;
         this.user = user;
     }
 
@@ -61,7 +67,8 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
 
     @Override
     public Response doTransfer (TransferRequest request) {
-        return Response.status(Response.Status.NO_CONTENT).build();
+        Transaction.Id transactionId = transferCommandManager.transfer(request.getFrom(), request.getTo(), request.getAmount());
+        return Response.status(Response.Status.OK).entity(transactionId).build();
     }
     
     private Account.Id generateId () {

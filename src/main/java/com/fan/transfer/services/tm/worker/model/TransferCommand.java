@@ -21,7 +21,7 @@ public class TransferCommand extends Command {
    private Processor<TransferCommand> processor;
 
    @Override
-   public ReplyI execute() {
+   public CommandI execute() {
         return processor.process(this);
     }
 }

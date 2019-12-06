@@ -5,6 +5,7 @@ import com.fan.transfer.api.model.CreateAccountResponse
 import com.fan.transfer.api.model.CreateUserResponse
 import com.fan.transfer.domain.Account
 import com.fan.transfer.domain.ErrorResponse
+import com.fan.transfer.domain.Transaction
 import com.fan.transfer.domain.User
 import com.fan.transfer.integrational.di.RestClientFactory
 import com.fan.transfer.integrational.di.TestModule
@@ -110,20 +111,25 @@ class RestEndpointsSpec extends Specification {
     def "get '#userId' balance"() {
         setup:
         userRepository.add(user)
-        userRepository.add(account)
-        
-        client.path(path, userId)
-        Response resp = client.get()
+        accountRepository.add(account)
+        accountRepository.add(account2)
+
+        client.path(path, userId, accountId)
+        Response resp = client.post(transferRequest)
 
         expect:
-        resp.readEntity(new GenericType<List<Account>>() {}) == accounts
+        resp.readEntity(Transaction.Id.class) == tsIds
 
         where:
-        userId << "userId1"
-        path << "/user/{userId}/account/{accountId}/balance"
-
-        "/account/balance/{accountId}" | "andrewFan" || []
-//        "/account/balance/{userId}" | null        || User.builder().id(userId).build()
+        userId << ["userId1"]
+        user << [User.builder().id(new User.Id(userId)).build()]
+        accountId << ["accountId1"]
+        accountId2 << ["accountId2"]
+        account << [Account.builder().id(new Account.Id(accountId)).userId(new User.Id(userId)).balance(new BigDecimal(1000)).build()]
+        account2 << [Account.builder().id(new Account.Id(accountId2)).userId(new User.Id(userId)).balance(new BigDecimal(10)).build()]
+        path << ["/user/{userId}/account/{accountId}/transfer"]
+        transferRequest << [[from: accountId, to: accountId2, amount: 100.01]]
+        tsIds << ["123456"]
     }
 
     def "get unknown '#userId' balance"() {

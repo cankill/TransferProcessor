@@ -33,7 +33,7 @@ public abstract class FinalProcessor <T extends FinalCommand> implements Process
      * @return ReplyI object
      */
     @Override
-    public ReplyI process (T command) {
+    public CommandI process (T command) {
         var account = accountRepository.get(command.getFrom());
         if (account != null) {
             // Update transaction in DB, start process of commit

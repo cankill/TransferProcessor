@@ -2,10 +2,7 @@ package com.fan.transfer.services.tm.worker;
 
 import com.fan.transfer.domain.*;
 import com.fan.transfer.pereferial.db.Repository;
-import com.fan.transfer.services.tm.worker.model.FailureReply;
-import com.fan.transfer.services.tm.worker.model.ReplyI;
-import com.fan.transfer.services.tm.worker.model.SuccessReply;
-import com.fan.transfer.services.tm.worker.model.TransferCommand;
+import com.fan.transfer.services.tm.worker.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -14,14 +11,16 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Slf4j
-public abstract class InitProcessor implements Processor<TransferCommand> {
+public abstract class InitProcessor implements Processor<ModifyCommand> {
     private final Repository<Transaction.Id, Transaction> transactionRepository;
     private final Repository<Account.Id, Account> accountRepository;
+    private final PostInitProcessor postInitProcessor;
 
     public InitProcessor (Repository<Transaction.Id, Transaction> transactionRepository,
                           Repository<Account.Id, Account> accountRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.postInitProcessor = new PostInitProcessor(transactionRepository);
     }
 
     /**
@@ -35,7 +34,7 @@ public abstract class InitProcessor implements Processor<TransferCommand> {
      * @return ReplyI object
      */
     @Override
-    public ReplyI process (TransferCommand command) {
+    public CommandI process (ModifyCommand command) {
         var account = accountRepository.get(command.getFrom());
         if (account != null) {
             var currentBalance = account.getBalance();
@@ -63,44 +62,45 @@ public abstract class InitProcessor implements Processor<TransferCommand> {
                                        .build();
                     // Store account changes in DB
                     if (accountRepository.update(account.getId(), patch)) {
-                        return SuccessReply.builder()
-                                           .transactionId(transaction.getId())
-                                           .parentTransactionId(command.getTransactionId())
-                                           .build();
+                        return SuccessInitReply.builder()
+                                               .transactionId(transaction.getId())
+                                               .processor(postInitProcessor)
+                                               .parentTransactionId(command.getTransactionId())
+                                               .build();
                     } else {
                         var error = String.format("Account '%s' not updated", transaction.getFrom());
                         log.error(error);
-                        return FailureReply.builder()
-                                           .transactionId(transaction.getId())
-                                           .parentTransactionId(command.getTransactionId())
-                                           .message(error)
-                                           .build();
+                        return FailureInitReply.builder()
+                                               .transactionId(transaction.getId())
+                                               .parentTransactionId(command.getTransactionId())
+                                               .message(error)
+                                               .build();
                     }
                 } else {
                     var error = String.format("Could not store a transaction '%s'", transaction);
                     log.error(error);
-                    return FailureReply.builder()
-                                       .transactionId(transaction.getId())
-                                       .parentTransactionId(command.getTransactionId())
-                                       .message(error)
-                                       .build();
+                    return FailureInitReply.builder()
+                                           .transactionId(transaction.getId())
+                                           .parentTransactionId(command.getTransactionId())
+                                           .message(error)
+                                           .build();
                 }
             } else {
                 var error = String.format("Account '%s' has not enough balance", account);
                 log.error(error);
-                return FailureReply.builder()
-                                   .parentTransactionId(command.getTransactionId())
-                                   .message(error)
-                                   .build();
+                return FailureInitReply.builder()
+                                       .parentTransactionId(command.getTransactionId())
+                                       .message(error)
+                                       .build();
             }
         }
 
         var error = String.format("Account '%s' not found", command.getFrom());
         log.error(error);
-        return FailureReply.builder()
-                           .parentTransactionId(command.getTransactionId())
-                           .message(error)
-                           .build();
+        return FailureInitReply.builder()
+                               .parentTransactionId(command.getTransactionId())
+                               .message(error)
+                               .build();
     }
 
     protected abstract boolean balanceIsEnough (BigDecimal currentBalance, BigDecimal amount);

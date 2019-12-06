@@ -65,15 +65,18 @@ public class TransferCommandManagerImpl implements TransferCommandManager {
     }
 
     @Override
-    public void transfer (Account.Id from, Account.Id to, BigDecimal amount) {
-        var transferCommand = new TransferCommand(from, to, amount, transferProcessor);
+    public Transaction.Id transfer (Account.Id from, Account.Id to, BigDecimal amount) {
+        var transferCommand = TransferCommand.builder().from(from).to(to).amount(amount).processor(transferProcessor).build();
         var reply = transferCommand.execute();
 
         if(reply instanceof SuccessReply) {
             SuccessReply successReply = (SuccessReply) reply;
             sendCredit(transferCommand, successReply.getTransactionId());
             sendDebit(transferCommand, successReply.getTransactionId());
+            return successReply.getTransactionId();
         }
+
+        return null;
     }
 
     private void sendCredit (TransferCommand command, Transaction.Id transactionId) {

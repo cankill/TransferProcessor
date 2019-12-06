@@ -1,9 +1,10 @@
 package com.fan.transfer.services.tm;
 
 import com.fan.transfer.domain.Account;
+import com.fan.transfer.domain.Transaction;
 
 import java.math.BigDecimal;
 
 public interface TransferCommandManager {
-    void transfer (Account.Id from, Account.Id to, BigDecimal amount);
+    Transaction.Id transfer (Account.Id from, Account.Id to, BigDecimal amount);
 }

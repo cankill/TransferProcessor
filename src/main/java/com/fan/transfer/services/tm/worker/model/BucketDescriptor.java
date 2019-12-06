@@ -11,7 +11,7 @@ public class BucketDescriptor {
     private int bucket;
     private String name;
     private ConcurrentLinkedDeque<CommandI> commandsQueue = new ConcurrentLinkedDeque<>();
-    private ConcurrentLinkedDeque<ReplyI> repliesQueue = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<CommandI> repliesQueue = new ConcurrentLinkedDeque<>();
 
     public boolean queuesAreEmpty() {
         return commandsQueue.isEmpty() && repliesQueue.isEmpty();

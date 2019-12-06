@@ -11,12 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class FinalCommand extends Command {
+public abstract class FinalCommand extends Command {
     private Account.Id from;
-    private Processor<FinalCommand> processor;
-
-    @Override
-    public ReplyI execute() {
-        return processor.process(this);
-    }
 }

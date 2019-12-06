@@ -9,6 +9,7 @@ import java.util.*;
 
 @Value
 @Builder
+@AllArgsConstructor
 public class Account implements HasId<Account.Id> {
     private Id id;
     private User.Id userId;
@@ -20,6 +21,7 @@ public class Account implements HasId<Account.Id> {
 
     @Value
     @Builder
+    @AllArgsConstructor
     public static class Id implements IsId {
         private String value;
 

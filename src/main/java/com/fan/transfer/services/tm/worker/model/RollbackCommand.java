@@ -13,7 +13,7 @@ public class RollbackCommand extends FinalCommand {
     private Processor<RollbackCommand> processor;
 
     @Override
-    public ReplyI execute() {
+    public CommandI execute() {
         return processor.process(this);
     }
 }

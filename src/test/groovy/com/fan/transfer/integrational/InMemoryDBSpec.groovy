@@ -55,11 +55,11 @@ class InMemoryDBSpec extends Specification {
         userId << [new User.Id("andrewFan")]
         accountId << [new Account.Id("acountId1")]
         transactionId << [new Transaction.Id("transactionId1")]
-        user << [User.builder().id(userId).accounts([new Ref(accountId)]).build()]
-        account << [Account.builder().id(accountId).transactions([new Ref(transactionId)]).build()]
+        user << [User.builder().id(userId).build()]
+        account << [Account.builder().id(accountId).userId(userId).build()]
         transaction << [Transaction.builder().id(transactionId).build()]
-        expectedUser << [User.builder().id(userId).accounts([new Ref(accountId)]).build()]
-        expectedAccount << [Account.builder().id(accountId).transactions([new Ref(transactionId)]).build()]
+        expectedUser << [User.builder().id(userId).build()]
+        expectedAccount << [Account.builder().id(accountId).userId(userId).build()]
         expectedTransaction << [Transaction.builder().id(transactionId).build()]
     }
 

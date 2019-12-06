@@ -28,7 +28,7 @@ public class TransferProcessor implements Processor<TransferCommand> {
      * @return ReplyI object
      */
     @Override
-    public ReplyI process (TransferCommand command) {
+    public CommandI process (TransferCommand command) {
         log.debug("Processing Transfer command '{}'", command);
         Transaction.Id transactionId = generateId();
         var transaction = Transaction.builder()

@@ -6,6 +6,8 @@ import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.TransferCommandManagerImpl;
 import com.fan.transfer.services.tm.coordinator.model.CoordinatorDescriptor;
 import com.fan.transfer.services.tm.worker.*;
+import com.fan.transfer.services.tm.worker.model.SuccessInitReply;
+import com.fan.transfer.services.tm.worker.model.SuccessReply;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -36,39 +38,32 @@ public class TransactionCoordinatorWorker implements Runnable {
 
     @Override
     public void run () {
-        workers.forEach((k, desc) -> desc.getThread().start());
+        workers.values().forEach(workerDescription -> workerDescription.getThread().start());
         try {
             while (!Thread.interrupted()) {
-                processCommandsBatch(50);
-                processRepliesBatch(50);
+                processRepliesBatch();
 
-                sleepWhileEmptyQueues();
+//                sleepWhileEmptyQueues();
             }
         } catch (InterruptedException ignore) {
             log.info("Coordinator process '{}' was interrupted", tcDescriptor.getName());
         }
     }
     
-    private void processCommandsBatch (int batchSize) throws InterruptedException {
-        while (!tcDescriptor.getCommandsQueue().isEmpty() && batchSize > 0) {
-            var command = tcDescriptor.getCommandsQueue().pollFirst();
-            var reply = command.execute();
-            tcDescriptor.getRepliesQueue().addLast(reply);
-            batchSize --;
-        }
-    }
-
-    private void processRepliesBatch (int batchSize) {
-        while (!tcDescriptor.getRepliesQueue().isEmpty() && batchSize > 0) {
-            var reply = tcDescriptor.getRepliesQueue().pollFirst();
-
-            
-
+    private void processRepliesBatch () throws InterruptedException {
+        workers.values().forEach(worker -> {
+            if(!worker.getWorkerDescriptor().getRepliesQueue().isEmpty()) {
+                var reply = worker.getWorkerDescriptor().getRepliesQueue().pollFirst();
+                var postResult = reply.execute();
+                if(postResult instanceof SuccessInitReply) {
+                    
+                }
 
 //            var reply = reply.execute();
 //            tcDescriptor.getRepliesQueue().addLast(reply);
-            batchSize --;
-        }
+
+            }
+        });
     }
 
     private void sleepWhileEmptyQueues () throws InterruptedException {
