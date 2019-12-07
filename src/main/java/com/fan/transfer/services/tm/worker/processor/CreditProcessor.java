@@ -1,15 +1,15 @@
-package com.fan.transfer.services.tm.worker;
+package com.fan.transfer.services.tm.worker.processor;
 
 import com.fan.transfer.domain.*;
 import com.fan.transfer.pereferial.db.Repository;
-import lombok.extern.slf4j.Slf4j;
+import com.fan.transfer.services.tm.worker.model.CreditCommand;
 
 import java.math.BigDecimal;
 
-public class CreditProcessor extends InitProcessor {
+public class CreditProcessor extends InitProcessor<CreditCommand> {
     public CreditProcessor (Repository<Transaction.Id, Transaction> transactionRepository,
-                            Repository<Account.Id, Account> accountRepository) {
-        super(transactionRepository, accountRepository);
+                            Repository<Account.Id, Account> accountRepository, ProcessorFactory processorFactory) {
+        super(transactionRepository, accountRepository, processorFactory);
     }
 
     /**

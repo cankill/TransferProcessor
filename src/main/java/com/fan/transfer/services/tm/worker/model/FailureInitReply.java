@@ -1,6 +1,6 @@
 package com.fan.transfer.services.tm.worker.model;
 
-import com.fan.transfer.services.tm.worker.Processor;
+import com.fan.transfer.services.tm.worker.processor.Processor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -15,7 +15,7 @@ public class FailureInitReply extends Reply {
     private Processor<FailureInitReply> processor;
 
     @Override
-    public CommandI execute() {
+    public CommandInterface execute() {
         return processor.process(this);
     }
 }

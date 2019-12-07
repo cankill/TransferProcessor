@@ -67,8 +67,8 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
 
     @Override
     public Response doTransfer (TransferRequest request) {
-        Transaction.Id transactionId = transferCommandManager.transfer(request.getFrom(), request.getTo(), request.getAmount());
-        return Response.status(Response.Status.OK).entity(transactionId).build();
+        transferCommandManager.transfer(request.getFrom(), request.getTo(), request.getAmount());
+        return Response.status(Response.Status.OK).build();
     }
     
     private Account.Id generateId () {

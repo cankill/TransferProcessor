@@ -1,7 +1,7 @@
 package com.fan.transfer.services.tm.worker.model;
 
 import com.fan.transfer.domain.Account;
-import com.fan.transfer.services.tm.worker.Processor;
+import com.fan.transfer.services.tm.worker.processor.Processor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class TransferCommand extends Command {
+public class TransferCommand extends Command  implements HasFrom {
    private Account.Id from;
    private Account.Id to;
    private BigDecimal amount;
@@ -21,7 +21,7 @@ public class TransferCommand extends Command {
    private Processor<TransferCommand> processor;
 
    @Override
-   public CommandI execute() {
+   public CommandReply execute() {
         return processor.process(this);
     }
 }

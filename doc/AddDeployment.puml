@@ -1,0 +1,32 @@
+@startuml
+participant "Agent Control" as AC
+boundary "Rest Api" as Api
+control "Deployment\nService" as DS
+control "Deployment\nManager" as DM
+database DB
+control "Deployment\nActor" as DA
+'entity Foo4
+'collections Foo6
+
+== Initialization ==
+autonumber 1 "##."
+AC --> Api : **POST** /deployments
+Api --> DS : process
+activate DS
+DS --> DB : saveDeployment
+DB --> DB : insert\n**sc_deployment**
+DB -[#00aa00]-> DS : Deployment
+DB --> DB : insert\n**sc_deployment_workset**
+DB --> DB : insert\n**sc_deployment_state**
+DS --> DB : insertWorkstationsState
+DB --> DB : insert\n**sc_workstation_state**
+DS --> DM : CreateDeployment
+DS -[#00aa00]-> Api : Deployment
+deactivate DS
+Api -[#00aa00]-> AC : **201** Created\n//DeploymentId//
+
+== Start Deployment Actor ==
+autonumber 11 "`##."
+DM --> DA : run
+
+@enduml

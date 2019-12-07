@@ -1,4 +1,4 @@
-package com.fan.transfer.services.tm.worker;
+package com.fan.transfer.services.tm.worker.processor;
 
 import com.fan.transfer.domain.Account;
 import com.fan.transfer.domain.Hold;
@@ -33,7 +33,7 @@ public abstract class FinalProcessor <T extends FinalCommand> implements Process
      * @return ReplyI object
      */
     @Override
-    public CommandI process (T command) {
+    public CommandReply process (T command) {
         var account = accountRepository.get(command.getFrom());
         if (account != null) {
             // Update transaction in DB, start process of commit

@@ -3,19 +3,26 @@ package com.fan.transfer.services.tm.coordinator;
 import com.fan.transfer.domain.Account;
 import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.pereferial.db.Repository;
-import com.fan.transfer.services.tm.TransferCommandManagerImpl;
 import com.fan.transfer.services.tm.coordinator.model.CoordinatorDescriptor;
 import com.fan.transfer.services.tm.worker.*;
-import com.fan.transfer.services.tm.worker.model.SuccessInitReply;
-import com.fan.transfer.services.tm.worker.model.SuccessReply;
+import com.fan.transfer.services.tm.worker.model.*;
+import com.fan.transfer.services.tm.worker.processor.CommitCreditProcessor;
+import com.fan.transfer.services.tm.worker.processor.CommitDebitProcessor;
+import com.fan.transfer.services.tm.worker.processor.RollbackCreditProcessor;
+import com.fan.transfer.services.tm.worker.processor.RollbackDebitProcessor;
+import lombok.AllArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class TransactionCoordinatorWorker implements Runnable {
     private final CoordinatorDescriptor tcDescriptor;
-    private Map<Integer, TransferCommandManagerImpl.WorkerProcessDescriptor> workers;
+    private Map<Integer, WorkerProcessDescriptor> workers;
     
     private CommitCreditProcessor commitCreditProcessor;
     private CommitDebitProcessor commitDebitProcessor;
@@ -24,46 +31,61 @@ public class TransactionCoordinatorWorker implements Runnable {
 
 
     public TransactionCoordinatorWorker (final CoordinatorDescriptor tcDescriptor,
-                                         final Map<Integer, TransferCommandManagerImpl.WorkerProcessDescriptor> workers,
                                          final Repository<Transaction.Id, Transaction> transactionRepository,
                                          final Repository<Account.Id, Account> accountRepository) {
         this.tcDescriptor = tcDescriptor;
-        this.workers = workers;
 
-        this.commitCreditProcessor = new CommitCreditProcessor(transactionRepository, accountRepository);
-        this.commitDebitProcessor = new CommitDebitProcessor(transactionRepository, accountRepository);
-        this.rollbackCreditProcessor = new RollbackCreditProcessor(transactionRepository, accountRepository);
-        this.rollbackDebitProcessor = new RollbackDebitProcessor(transactionRepository, accountRepository);
+        this.commitCreditProcessor = new CommitCreditProcessor(transactionRepository, accountRepository, this);
+        this.commitDebitProcessor = new CommitDebitProcessor(transactionRepository, accountRepository, this);
+        this.rollbackCreditProcessor = new RollbackCreditProcessor(transactionRepository, accountRepository, this);
+        this.rollbackDebitProcessor = new RollbackDebitProcessor(transactionRepository, accountRepository, this);
     }
 
     @Override
     public void run () {
+        runWorkersPool();
         workers.values().forEach(workerDescription -> workerDescription.getThread().start());
         try {
             while (!Thread.interrupted()) {
-                processRepliesBatch();
+                processCommandsBatch(tcDescriptor.getBucketCount());
 
-//                sleepWhileEmptyQueues();
+                processRepliesBatch(tcDescriptor.getBucketCount());
+
+                sleepWhileEmptyQueues();
             }
         } catch (InterruptedException ignore) {
             log.info("Coordinator process '{}' was interrupted", tcDescriptor.getName());
         }
     }
-    
-    private void processRepliesBatch () throws InterruptedException {
-        workers.values().forEach(worker -> {
-            if(!worker.getWorkerDescriptor().getRepliesQueue().isEmpty()) {
-                var reply = worker.getWorkerDescriptor().getRepliesQueue().pollFirst();
-                var postResult = reply.execute();
-                if(postResult instanceof SuccessInitReply) {
-                    
-                }
 
-//            var reply = reply.execute();
-//            tcDescriptor.getRepliesQueue().addLast(reply);
+    private void runWorkersPool () {
+        workers = IntStream.range(0, tcDescriptor.getBucketCount()).mapToObj(bucketNumber -> {
+            String bucketName = String.format("Bucket#%s", bucketNumber);
+            log.debug("Init Worker for bucket: {}", bucketName);
+            var bucketDescriptor = BucketDescriptor.builder()
+                    .name(bucketName)
+                    .tcDescriptor(tcDescriptor)
+                    .build();
+            var worker = new BucketWorker(bucketDescriptor);
+            var thread = new Thread(worker, bucketName);
+            return new WorkerProcessDescriptor(bucketNumber, bucketDescriptor, thread);
+        }).collect(Collectors.toMap(WorkerProcessDescriptor::getBucketId, Function.identity()));
+    }
 
-            }
-        });
+    private void processCommandsBatch (int batchSize) throws InterruptedException {
+        while (!tcDescriptor.getCommandsQueue().isEmpty() && batchSize > 0) {
+            CommandInterface command = tcDescriptor.getCommandsQueue().pollFirst();
+            sendCommandToWorker(command);
+            batchSize --;
+        }
+    }
+
+    private void processRepliesBatch (int batchSize) throws InterruptedException {
+        while (!tcDescriptor.getRepliesQueue().isEmpty() && batchSize > 0) {
+            CommandReply reply = tcDescriptor.getRepliesQueue().pollFirst();
+            reply.getNext().forEach(replyCommand -> tcDescriptor.getCommandsQueue().addLast(replyCommand));
+            batchSize --;
+        }
     }
 
     private void sleepWhileEmptyQueues () throws InterruptedException {
@@ -75,33 +97,24 @@ public class TransactionCoordinatorWorker implements Runnable {
         }
     }
 
+    private void sendCommandToWorker (CommandInterface command) {
+        var bucket = calculateBucketNumber(command.getFrom(), tcDescriptor.getBucketCount());
+        var worker = workers.get(bucket);
+        worker.getBucketDescriptor().getCommandsQueue().addLast(command);
+        synchronized (worker.getBucketDescriptor()) {
+            worker.getBucketDescriptor().notifyAll();
+        }
+    }
 
+    private int calculateBucketNumber(Object key, int bucketCount) {
+        return Math.abs((key.hashCode() & 0x7fffffff) % bucketCount);
+    }
 
-
-
-
-//    private void restore() {
-//        transactionRepository.getAll().stream()
-//                .filter(TransferCommandManagerImpl::isTmTransactionActive)
-//                .sorted(TransferCommandManagerImpl::sortTransactionsByDateTime)
-//                .forEach(trx -> activeQueue.addLast(trx));
-//    }
-//
-//    private static int sortTransactionsByDateTime (Transaction transaction1, Transaction transaction2) {
-//        if(transaction1.getDateTime() == null) {
-//            return -1;
-//        }
-//
-//        if(transaction2.getDateTime() == null) {
-//            return 1;
-//        }
-//
-//        return transaction1.getDateTime().compareTo(transaction2.getDateTime());
-//    }
-//
-//    private static boolean isTmTransactionActive (Transaction trx) {
-//        return trx.getType() == TransactionType.TM &&
-//                trx.getStatus() == TransactionStatus.IN_PROGRESS;
-//    }
-
+    @Value
+    @AllArgsConstructor
+    public static class WorkerProcessDescriptor {
+        private int bucketId;
+        private BucketDescriptor bucketDescriptor;
+        private Thread thread;
+    }
 }

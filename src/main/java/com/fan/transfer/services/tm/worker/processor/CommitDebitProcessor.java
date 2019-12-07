@@ -1,16 +1,16 @@
-package com.fan.transfer.services.tm.worker;
+package com.fan.transfer.services.tm.worker.processor;
 
 import com.fan.transfer.domain.Account;
 import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.domain.TransactionStatus;
 import com.fan.transfer.pereferial.db.Repository;
-import com.fan.transfer.services.tm.worker.model.CommitCommand;
+import com.fan.transfer.services.tm.worker.model.CommitCommandOld;
 
 import java.math.BigDecimal;
 
-public class CommitDebitProcessor extends FinalProcessor<CommitCommand> {
+public class CommitDebitProcessor extends FinalProcessor<CommitCommandOld> {
     public CommitDebitProcessor (Repository<Transaction.Id, Transaction> transactionRepository,
-                                 Repository<Account.Id, Account> accountRepository) {
+                                 Repository<Account.Id, Account> accountRepository, ProcessorFactory processorFactory) {
         super(transactionRepository, accountRepository);
     }
 
@@ -27,6 +27,6 @@ public class CommitDebitProcessor extends FinalProcessor<CommitCommand> {
 
     @Override
     protected TransactionStatus hintTransactionStatus () {
-        return TransactionStatus.SUCCESSFUL;
+        return TransactionStatus.COMMIT;
     }
 }

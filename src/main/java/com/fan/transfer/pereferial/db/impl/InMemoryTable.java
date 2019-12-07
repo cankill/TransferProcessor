@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,6 +46,18 @@ public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Reposi
                 .map(this::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<T> getAllBy (Predicate<T> predicateBy) {
+        if (predicateBy == null) {
+            return new LinkedList<>();
+        }
+
+        return getAll().stream()
+                .filter(predicateBy)
+                .collect(Collectors.toList());
+
     }
 
     @Override

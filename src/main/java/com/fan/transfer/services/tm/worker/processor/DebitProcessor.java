@@ -1,14 +1,15 @@
-package com.fan.transfer.services.tm.worker;
+package com.fan.transfer.services.tm.worker.processor;
 
 import com.fan.transfer.domain.*;
 import com.fan.transfer.pereferial.db.Repository;
+import com.fan.transfer.services.tm.worker.model.DebitCommand;
 
 import java.math.BigDecimal;
 
-public class DebitProcessor extends InitProcessor {
+public class DebitProcessor extends InitProcessor<DebitCommand> {
     public DebitProcessor (Repository<Transaction.Id, Transaction> transactionRepository,
-                           Repository<Account.Id, Account> accountRepository) {
-        super(transactionRepository, accountRepository);
+                           Repository<Account.Id, Account> accountRepository, ProcessorFactory processorFactory) {
+        super(transactionRepository, accountRepository, processorFactory);
     }
 
     /**

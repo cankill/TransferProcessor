@@ -1,0 +1,46 @@
+@startuml
+!include images.puml
+
+!define timeout(_) ""<color gray>timeout</color>""
+!define timeout(f, t) f -[#gray]-> t : timeout()
+!define canBeTimedout(_) <$hourglass_2{scale=0.4}>
+'!define action(src, comment) <color darkred>**src**</color>\l<color darkred>comment</color>
+!define action(src, method="", url="") <color darkred>**src**</color>\l<color darkred>**method**: url</color>
+!define action(src, method="", url="", resp="") <color darkred>**src**</color>\l<color darkred>**method**: url</color>\l<color silver>resp</color>
+
+skinparam backgroundColor LightYellow
+skinparam state {
+  BackgroundColor LightGray
+  FontColor Black
+  BorderColor Gray
+  FontName Impact
+}
+
+state "Waiting Deployment" as WD
+'state "Waiting Updater Install" as WUI
+'state "Waiting Updater Action" as WUA : canBeTimedout()
+'state "Waiting Updater Download" as WUD : canBeTimedout()
+'state "Waiting Updater Upgrade" as WUU : canBeTimedout()
+state "Waiting Updater Remove" as WUR : canBeTimedout()
+state "Waiting Agent Action" as WAA : canBeTimedout()
+'state "Waiting Agent Install" as WAI : canBeTimedout()
+state "Waiting Agent Remove" as WAR : canBeTimedout()
+state "Waiting Agent Erase" as WAE : canBeTimedout()
+state "Waiting Reboot Complete" as WRC
+
+[*] --> WD
+WD --> WAA : action(SC,WinRm,Updater Check)
+WAA --> WAR: action(Updater,POST,/api/v1/{UUID}/deployments,"**Response: **//{action : remove}//")
+WAR --> WRC: action(Updater,POST,/api/v1/{UUID}/deployment-states,"**Request: **//{state : remove:reboot}//")\l action(SC,WinRm,Reboot)
+WRC --> WAE: action(Updater,POST,/api/v1/{UUID}/deployment-states)
+WAE --> WUR: action(Updater,POST,/api/v1/{UUID}/deployments)
+WUR --> WD: "" dd""
+
+
+timeout(WAA, WD)
+timeout(WAR, WD)
+timeout(WAE, WD)
+timeout(WUR, WD)
+
+
+@enduml

@@ -10,9 +10,8 @@ import lombok.experimental.SuperBuilder;
 @NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class FailureReply extends Reply {
-    private String message;
-    private Processor<FailureReply> processor;
+public class WaitingInitReply extends Reply {
+    private Processor<WaitingInitReply> processor;
 
     @Override
     public CommandInterface execute() {

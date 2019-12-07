@@ -6,11 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-public class AccountBucketWorker implements Runnable {
+public class BucketWorker implements Runnable {
     @Getter
     private final BucketDescriptor descriptor;
 
-    public AccountBucketWorker (BucketDescriptor descriptor) {
+    public BucketWorker (BucketDescriptor descriptor) {
         this.descriptor = descriptor;
     }
 
@@ -29,11 +29,19 @@ public class AccountBucketWorker implements Runnable {
     }
 
     private void processCommandsBatch (int batchSize) throws InterruptedException {
+        boolean hadReplies = false;
         while (!descriptor.getCommandsQueue().isEmpty() && batchSize > 0) {
-            CommandI command = descriptor.getCommandsQueue().pollFirst();
+            CommandInterface command = descriptor.getCommandsQueue().pollFirst();
             var reply = command.execute();
-            descriptor.getRepliesQueue().addLast(reply);
+            descriptor.getTcDescriptor().getRepliesQueue().addLast(reply);
+            hadReplies = true;
             batchSize --;
+        }
+
+        if(hadReplies) {
+            synchronized (descriptor.getTcDescriptor()) {
+                descriptor.getTcDescriptor().notifyAll();
+            }
         }
     }
 

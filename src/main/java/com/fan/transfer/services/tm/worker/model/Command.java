@@ -8,6 +8,6 @@ import lombok.experimental.SuperBuilder;
 @Value
 @NonFinal
 @SuperBuilder
-public abstract class Command implements CommandI {
+public abstract class Command implements CommandInterface {
     private Transaction.Id transactionId;
 }

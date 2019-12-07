@@ -1,0 +1,95 @@
+@startuml
+'participant "Agent Control" as AC
+'boundary "Rest Api" as Api
+participant  "Deployment\nManager" as DM
+box "Deployment Actor" #LightBlue
+    control "Pre Start" as DA
+    control "Deployment\nActor\nScheduled" as DASch
+    control "Deployment\nActor\nStarted" as DASt
+end box
+
+control "Deployment\nService" as DS
+database DB
+control "Software\nCenter\nManager" as SCM
+
+'entity Foo4
+'collections Foo6
+
+'== Start Deployment Actor ==
+autonumber 1 "##."
+DM --> DA : run\n//New//\nimmidiatlyDeploy=true
+activate DA
+DA -> DASch : become
+activate DASch
+DA -> DASch : StartDeployment
+deactivate DA
+DASch --> DS: assignDeployment
+DS --> DB : getWorkstations
+DB --> DB : select\n**sc_deployment_workset**
+DB -[#00aa00]-> DS : workstations
+DS --> DB : initAttempts
+DB --> DB : insert\n**sc_deployment_attempt**
+DB -[#00aa00]-> DS : attempts
+DS --> DB : saveDeploymentState\n""Running""
+DB --> DB : upsert\n**sc_deployment_state**
+DS -[#00aa00]-> DASch : attempts
+DASch --> DASt : become
+activate DASt
+DASch --> DASt : Audit
+deactivate DASch
+DASt --> DS : getNotStarted
+DS --> DB : getAllWorkstationsInState\n""WUI""
+DB --> DB : select\n**sc_workstation_state**
+DB -[#00aa00]-> DS : numberOfInWUI
+DS --> DB : notStartedWorkstations
+DB --> DB : select\n**sc_deployment**,\n**sc_deployment_workset**,\n**sc_workstation_state**,\n**sc_deployment_attempt**
+DB -[#00aa00]-> DS : workstations
+DS -[#00aa00]-> DASt : workstations
+DASt --> DS : runDeployments\n**workstations**,\n**deployment**
+DASt --> DS : getActiveWorkstations
+DS --> DB : getActiveWorkstations
+DB --> DB : select\n**sc_deployment_attempt**,\n**sc_workstation_state**
+DB -[#00aa00]-> DS : workstations
+DS -[#00aa00]-> DASt : workstations
+DASt --> DASt : check timeot
+DASt --> DS : failureDeploymentOnTimeout
+DS --> DB : completeDeploymentAttempt
+DB --> DB : update\n**sc_deployment_attempt**
+DS --> ESS : sendEvent
+DS --> DB : saveStatus
+DB --> DB : insert\n**sc_workstation_status**
+DS --> DB : dropWorkstationToWD
+DB --> DB : update\n**sc_workstation_state**
+DASt --> DS : isComplete
+DS --> DB : getActiveAttempts
+DB --> DB : select\n**sc_deployment_attempt**
+DB -[#00aa00]-> DS : []
+DS -[#00aa00]-> DASt : true
+DASt --> DASt : DeploymentCompleted
+activate DASch
+DASt --> DASch : become
+DASt --> DASch : Audit
+deactivate DASt
+DASch --> DASch : Audit
+DASch --> DS : isCancel
+DS --> DB : getInitialDeploymentWorkstations
+DB --> DB : select\n**sc_deployment**,\n**sc_deployment_workset**
+DB -[#00aa00]-> DS : []
+DS -[#00aa00]-> DASch : true
+DASch --> DASch : DeploymentCancel
+DASch --> DS : cancelDeployment
+DS --> DB : saveDeploymentState\n""Completed""
+DB --> DB : upsert\n**sc_deployment_state**
+DS --> DB : cleanActiveAttempts
+DB --> DB : update\n**sc_deployment_attempt**
+DS --> DB : unAssignDeployment
+DB --> DB : delete\n**sc_deployment_workset**
+DASch --> DASch : PoisonPill
+deactivate DASch
+
+
+== Start Workstation Actor work ==
+autonumber 25 "`##."
+DS --> SCM : RunOn
+activate SCM
+@enduml

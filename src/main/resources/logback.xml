@@ -3,7 +3,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>[%.-1level][%12.12thread{12}] %30.30logger{30}: %msg%n</pattern>
+            <pattern>[%d{.SSS}][%.-1level][%12.12thread{12}] %30.30logger{30}: %msg%n</pattern>
         </encoder>
     </appender>
 

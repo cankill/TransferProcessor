@@ -10,12 +10,11 @@ import lombok.experimental.SuperBuilder;
 @NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class FailureReply extends Reply {
-    private String message;
-    private Processor<FailureReply> processor;
+public class CommitCreditCommand extends CommitCommand {
+    private Processor<CommitCreditCommand> processor;
 
     @Override
-    public CommandInterface execute() {
-        return processor.process(this);
+    public CommandReply execute() {
+        return getProcessor().process(this);
     }
 }

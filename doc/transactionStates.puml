@@ -1,0 +1,69 @@
+@startuml
+skinparam dpi 300
+!define primary_key(x) <b>x</b>
+!define green(x) <color:green>x</color>
+!define red(x) <color:red>x</color>
+!define blue(x) <color:blue>x</color>
+!define not_null(x) <u>x</u>
+' other tags available:
+' <i></i>
+' <back:COLOR></color>, where color is a color name or html color code
+' (#FFAACC)
+' see: http://plantuml.com/classes.html#More
+hide methods
+hide stereotypes
+
+state transfer_fork <<fork>>
+state transfer_join_succ <<join>>
+state transfer_join_fail <<join>>
+state rollback_fork <<fork>>
+state rollback_join <<join>>
+state commit_fork <<fork>>
+state commit_join <<join>>
+state CommitProcessor: Get sub-transactions\nrun Commit for each
+state RollbackProcessor: Get sub-transactions\nrun Rollback for each
+state PostRollBackProcessor: Check all sub-transactions status\nrollback main transaction
+
+[*] --> TransferProcessor: green(TransferCommand)
+TransferProcessor --> transfer_fork
+transfer_fork --> CreditProcessor : green(CreditCommand)
+transfer_fork --> DebitProcessor : green(DebitCommand)
+
+CreditProcessor --> transfer_join_succ: green(CommitCommand)
+DebitProcessor --> transfer_join_succ: green(CommitCommand)
+
+transfer_join_succ --> CommitProcessor
+CommitProcessor --> commit_fork
+commit_fork --> CommitDebitProcessor: green(CommitDebitCommand)
+commit_fork --> CommitCreditProcessor: green(CommitCreditCommand)
+CommitDebitProcessor --> commit_join: green(CommitSuccessCommand)
+CommitCreditProcessor --> commit_join: green(CommitSuccessCommand)
+commit_join --> PostCommitProcessor
+PostCommitProcessor --> [*]: green(null)
+
+transfer_join_fail --> RollbackProcessor
+RollbackProcessor --> rollback_fork
+rollback_fork --> RollbackDebitProcessor:  green(RollbackDebitCommand)
+rollback_fork --> RollbackCreditProcessor: green(RollbackCreditCommand)
+
+RollbackDebitProcessor --> rollback_join: green(RollbackSuccessCommand)
+RollbackCreditProcessor --> rollback_join: green(RollbackSuccessCommand)
+
+rollback_join --> PostRollBackProcessor
+PostRollBackProcessor --> [*]: green(null)
+
+' Fail path
+'TransferProcessor -> [*]: red(null)
+CreditProcessor --> transfer_join_fail: red(RollbackCommand)
+DebitProcessor --> transfer_join_fail: red(RollbackCommand)
+
+CommitProcessor -> transfer_join_fail: red(RollbackCommand)
+CommitCreditProcessor -> CommitCreditProcessor: red(RetryCommand)
+CommitDebitProcessor -> CommitDebitProcessor: red(RetryCommand)
+PostCommitProcessor -> PostCommitProcessor: red(RetryCommand)
+
+RollbackProcessor -> RollbackProcessor: red(RetryCommand)
+RollbackCreditProcessor -> RollbackCreditProcessor: red(RetryCommand)
+RollbackDebitProcessor -> RollbackDebitProcessor: red(RetryCommand)
+PostRollBackProcessor -> PostRollBackProcessor: red(RetryCommand)
+@enduml

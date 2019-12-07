@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @Value
 @NonFinal
 @SuperBuilder
-public abstract class Reply implements CommandI {
+public abstract class Reply implements CommandInterface {
     private Transaction.Id transactionId;
     private Transaction.Id parentTransactionId;
 }

@@ -1,4 +1,4 @@
-package com.fan.transfer.services.tm.worker;
+package com.fan.transfer.services.tm.worker.processor;
 
 import com.fan.transfer.domain.*;
 import com.fan.transfer.pereferial.db.Repository;
@@ -7,15 +7,18 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
 public class TransferProcessor implements Processor<TransferCommand> {
     private final Repository<Transaction.Id, Transaction> transactionRepository;
+    private final ProcessorFactory processorFactory;
 
     public TransferProcessor (final Repository<Transaction.Id, Transaction> transactionRepository,
-                              final Repository<Account.Id, Account> accountRepository) {
+                              ProcessorFactory processorFactory) {
         this.transactionRepository = transactionRepository;
+        this.processorFactory = processorFactory;
     }
 
     /**
@@ -23,12 +26,12 @@ public class TransferProcessor implements Processor<TransferCommand> {
      * 1. Create parent transaction for transfer
      * 2. Create Credit command for A
      * 3. Create Debit command for B
-     * 4. Send commands to it's threads to process
+     * 4. Return commands to proceed
      * @param command Transfer command to execute in a processor, contains all parameters
      * @return ReplyI object
      */
     @Override
-    public CommandI process (TransferCommand command) {
+    public CommandReply process (TransferCommand command) {
         log.debug("Processing Transfer command '{}'", command);
         Transaction.Id transactionId = generateId();
         var transaction = Transaction.builder()
@@ -38,16 +41,39 @@ public class TransferProcessor implements Processor<TransferCommand> {
                                      .amount(command.getAmount())
                                      .type(TransactionType.TM)
                                      .dateTime(LocalDateTime.now(ZoneOffset.UTC))
-                                     .status(TransactionStatus.IN_PROGRESS)
+                                     .status(TransactionStatus.PROGRESS)
                                      .build();
         
         if (!transactionRepository.add(transaction)) {
             var error = String.format("Could not store a transaction '%s'", transaction);
             log.error(error);
-            return FailureReply.builder().message(error).build();
+            return CommandReply.builder().status(CommandReply.Status.FAILURE).build();
         }
 
-        return SuccessReply.builder().transactionId(transactionId).build();
+        return CommandReply.builder().next(List.of(composeCredit(command, transactionId),
+                                                   composeDebit(command, transactionId)))
+                                     .status(CommandReply.Status.SUCCESS)
+                                     .build();
+    }
+
+    private Command composeCredit (TransferCommand command, Transaction.Id transactionId) {
+        return CreditCommand.builder()
+                            .processor(processorFactory.get(CreditCommand.class))
+                            .from(command.getFrom())
+                            .to(command.getTo())
+                            .amount(command.getAmount())
+                            .transactionId(transactionId)
+                            .build();
+    }
+
+    private Command composeDebit (TransferCommand command, Transaction.Id transactionId) {
+        return DebitCommand.builder()
+                           .processor(processorFactory.get(DebitCommand.class))
+                           .from(command.getTo())
+                           .to(command.getFrom())
+                           .amount(command.getAmount())
+                           .transactionId(transactionId)
+                           .build();
     }
 
     private static Transaction.Id generateId () {

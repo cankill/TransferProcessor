@@ -1,0 +1,85 @@
+@startuml
+' uncomment the line below if you're using computer with a retina display
+' skinparam dpi 300
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+' we use bold for primary key
+' green color for unique
+' and underscore for not_null
+!define primary_key(x) <b>x</b>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <u>x</u>
+' other tags available:
+' <i></i>
+' <back:COLOR></color>, where color is a color name or html color code
+' (#FFAACC)
+' see: http://plantuml.com/classes.html#More
+hide methods
+hide stereotypes
+
+' entities
+
+Table(sc_deployment, "sc_deployment") {
+    primary_key(id) uuid
+    not_null(modified) timestamp
+    not_null(parameters) jsonb
+}
+
+Table(sc_deployment_workset, "sc_deployment_workset") {
+    primary_key(id) text
+    primary_key(deployment) uuid
+}
+
+sc_deployment -- sc_deployment_workset : "id==deployment"
+
+Table(sc_deployment_state, "sc_deployment_state") {
+    primary_key(deployment_id) uuid
+    not_null(state_id) text
+    not_null(modified) timestamp
+}
+
+sc_deployment -- sc_deployment_state : "id==deployment_id"
+
+Table(sc_deployment_attempt, "sc_deployment_attempt") {
+    primary_key(attempt_id) bigint
+    not_null(host_id) text
+    not_null(deployment_id) uuid
+    start_time timestamp
+    stop_time timestamp
+    result text
+}
+
+sc_deployment "1" --> "0..N" sc_deployment_attempt : "id==deployment_id"
+
+
+Table(sc_workstation_state, "sc_workstation_state") {
+    primary_key(host_id) text
+    deployment_id uuid
+    updater_version text
+    agent_version text
+    not_null(stage_id) text
+    event_status text
+    last_boot_time timestamp
+    not_null(modified) timestamp
+}
+
+sc_deployment "1" --> "0..N" sc_workstation_state : "id==deployment_id"
+sc_workstation_state "1" --> "0..N" sc_deployment_attempt : "host_id==host_id"
+
+Table(sc_workstation_status, "sc_workstation_status") {
+    host_id text
+    not_null(status) jsonb
+    not_null(modified) timestamp
+}
+
+sc_workstation_state "1" --> "0..N" sc_workstation_status : "host_id==host_id"
+
+
+Table(sc_id_hostname, "sc_id_hostname") {
+    host_id text
+    not_null(parameters) jsonb
+    not_null(modified) timestamp
+}
+
+
+
+@enduml

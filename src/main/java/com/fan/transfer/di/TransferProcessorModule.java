@@ -14,6 +14,7 @@ import com.fan.transfer.pereferial.db.impl.InMemoryTable;
 import com.fan.transfer.services.*;
 import com.fan.transfer.services.tm.TransferCommandManager;
 import com.fan.transfer.services.tm.TransferCommandManagerImpl;
+import com.fan.transfer.services.tm.worker.processor.ProcessorFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -64,6 +65,12 @@ public class TransferProcessorModule extends AbstractModule {
     @Singleton
     AccountCommandManager getAccountCommandManager (Injector injector) {
         return injector.getInstance(AccountCommandManagerImpl.class);
+    }
+
+    @Provides
+    @Singleton
+    ProcessorFactory getProcessorFactory (Injector injector) {
+        return injector.getInstance(ProcessorFactory.class);
     }
 
     @Provides
