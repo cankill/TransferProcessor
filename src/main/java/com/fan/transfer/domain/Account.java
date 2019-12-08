@@ -2,10 +2,14 @@ package com.fan.transfer.domain;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Currency;
+import java.util.LinkedList;
+import java.util.List;
 
 @Value
 @Builder

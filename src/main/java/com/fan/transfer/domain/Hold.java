@@ -13,8 +13,13 @@ import java.util.function.Predicate;
 public class Hold {
     private Transaction.Id transactionId;
     private BigDecimal amount;
+    private TransactionStatus status;
 
     public static Predicate<Hold> byId (Transaction.Id id) {
         return hold -> hold.getTransactionId().equals(id);
+    }
+
+    public static Predicate<Hold> byStatus (TransactionStatus status) {
+        return hold -> hold.getStatus().equals(status);
     }
 }

@@ -1,6 +1,7 @@
 package com.fan.transfer.services.tm.worker;
 
-import com.fan.transfer.services.tm.worker.model.*;
+import com.fan.transfer.services.tm.worker.model.BucketDescriptor;
+import com.fan.transfer.services.tm.worker.model.CommandInterface;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

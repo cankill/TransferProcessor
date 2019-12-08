@@ -1,7 +1,6 @@
 package com.fan.transfer.integrational
 
 import com.fan.transfer.domain.Account
-
 import com.fan.transfer.domain.Transaction
 import com.fan.transfer.domain.User
 import com.fan.transfer.integrational.di.TestModule

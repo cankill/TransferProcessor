@@ -22,6 +22,6 @@ public class TransferCommand extends Command  implements HasFrom {
 
    @Override
    public CommandReply execute() {
-        return processor.process(this);
+        return getProcessor().process(this);
     }
 }

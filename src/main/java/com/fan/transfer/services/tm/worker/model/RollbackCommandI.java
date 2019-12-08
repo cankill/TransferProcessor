@@ -4,17 +4,14 @@ import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.services.tm.worker.processor.Processor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 
 @Value
+@NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class RollbackSuccessCommand extends Command {
+public abstract class RollbackCommandI extends Command implements HasParentId {
     private Transaction.Id parentTransactionId;
-    private Processor<RollbackSuccessCommand> processor;
-
-    @Override
-    public CommandReply execute() {
-        return getProcessor().process(this);
-    }
+    public abstract RollbackCommandI copy (int retry);
 }

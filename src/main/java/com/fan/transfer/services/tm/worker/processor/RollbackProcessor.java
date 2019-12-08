@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.fan.transfer.domain.Transaction.hasStatus;
-import static com.fan.transfer.domain.Transaction.relatedToParent;
+import static com.fan.transfer.domain.Transaction.byParent;
+import static com.fan.transfer.domain.Transaction.byStatus;
 
 @Slf4j
 public class RollbackProcessor implements Processor<RollbackCommand> {
@@ -38,28 +38,24 @@ public class RollbackProcessor implements Processor<RollbackCommand> {
      */
     @Override
     public CommandReply process (RollbackCommand command) {
+        var retry = command.getRetry() -1;
         Transaction.Id parentTransactionId = command.getParentTransactionId();
         Transaction parent = transactionRepository.get(parentTransactionId);
         if(parent != null) {
             if(parent.getStatus() == TransactionStatus.DONE) {
-                return CommandReply.builder()
-                        .status(CommandReply.Status.SUCCESS)
-                        .build();
+                return goToPostRollback(parentTransactionId);
             }
 
             var patch = Transaction.builder().status(TransactionStatus.ROLLBACK).build();
             transactionRepository.update(parentTransactionId, patch);
 
-            var subTransactions = transactionRepository.getAllBy(relatedToParent(parentTransactionId)
-                                                                 .and(hasStatus(TransactionStatus.DONE)
+            var subTransactions = transactionRepository.getAllBy(byParent(parentTransactionId)
+                                                                 .and(byStatus(TransactionStatus.DONE)
                                                                       .negate()));
 
             // All subTransactions are in status Done. Go Done parent transaction.
             if(subTransactions.isEmpty()) {
-                return CommandReply.builder()
-                                   .next(List.of(composeRollbackSuccess(parentTransactionId)))
-                                   .status(CommandReply.Status.SUCCESS)
-                                   .build();
+                return goToPostRollback(parentTransactionId);
             }
 
             var commands = subTransactions.stream().map(subTransaction ->
@@ -71,66 +67,57 @@ public class RollbackProcessor implements Processor<RollbackCommand> {
                     .next(commands)
                     .status(CommandReply.Status.SUCCESS)
                     .build();
-
-
-            Transaction.Id childTransactionId = command.getTransactionId();
-            var newChildren = parent.getChildren();
-            newChildren.add(childTransactionId);
-            var newParentTransaction = Transaction.builder().children(newChildren).build();
-            if(transactionRepository.update(parentTransactionId, newParentTransaction)) {
-                if(newChildren.size() == 2) {
-                    log.debug("Transaction '{}' could be committed", parentTransactionId);
-                    var subTransactions = transactionRepository.getAll(newChildren);
-                    if(subTransactions.size() ==2) {
-                        var commands = subTransactions.stream().map(subTransaction ->
-                            (subTransaction.getType() == TransactionType.CREDIT)
-                                ? composeRollbackCredit(subTransaction, parentTransactionId)
-                                : composeRollbackDebit(subTransaction, parentTransactionId)).collect(Collectors.toList());
-                        return CommandReply.builder()
-                                .next(commands)
-                                .status(CommandReply.Status.SUCCESS)
-                                .build();
-                    }
-                } else {
-                    log.debug("Waiting to all participant to finish. Wait for: '{}'", 2 - newChildren.size());
-                    return CommandReply.builder().status(CommandReply.Status.SUCCESS).build();
-                }
-            }
         }
 
-        log.error("Parent Transaction '{}' state change failed. Rollback.", parentTransactionId);
+        log.error("Parent Transaction '{}' state change failed.", parentTransactionId);
+        return retry(command, retry);
+    }
+
+    private CommandReply retry (RollbackCommand command, int retry) {
+        if(retry > 0) {
+            log.info("Retry Transaction '{}'.", command.getParentTransactionId());
+            return CommandReply.builder()
+                               .next(List.of(command.copy(retry)))
+                               .status(CommandReply.Status.FAILURE)
+                               .build();
+        } else {
+            log.error("No more Retry attempts for Transaction '{}'. Give up.", command.getParentTransactionId());
+            return CommandReply.builder()
+                               .status(CommandReply.Status.FAILURE)
+                               .build();
+        }
+    }
+
+    private CommandReply goToPostRollback (Transaction.Id parentTransactionId) {
         return CommandReply.builder()
-                .next(List.of(composerRollback(parentTransactionId)))
-                .status(CommandReply.Status.FAILURE)
-                .build();
+                           .next(List.of(composeRollbackSuccess(parentTransactionId)))
+                           .status(CommandReply.Status.SUCCESS)
+                           .build();
     }
 
     private CommandInterface composeRollbackCredit (Transaction creditSubTransaction, Transaction.Id parentTransactionId) {
-        return CommitCreditCommand.builder()
-                                  .processor(processorFactory.get(CommitCreditCommand.class))
-                                  .transactionId(creditSubTransaction.getId())
-                                  .parentTransactionId(parentTransactionId)
-                                  .build();
+        return RollbackCreditCommand.builder()
+                                   .processor(processorFactory.get(RollbackCreditCommand.class))
+                                   .from(creditSubTransaction.getFrom())
+                                   .transactionId(creditSubTransaction.getId())
+                                   .parentTransactionId(parentTransactionId)
+                                   .retry(3)
+                                   .build();
     }
 
     private CommandInterface composeRollbackDebit (Transaction debitSubTransaction, Transaction.Id parentTransactionId) {
-        return DebitCreditCommand.builder()
-                                 .processor(processorFactory.get(DebitCreditCommand.class))
-                                 .transactionId(debitSubTransaction.getId())
-                                 .parentTransactionId(parentTransactionId)
-                                 .build();
+        return RollbackDebitCommand.builder()
+                                  .processor(processorFactory.get(RollbackDebitCommand.class))
+                                  .from(debitSubTransaction.getFrom())
+                                  .transactionId(debitSubTransaction.getId())
+                                  .parentTransactionId(parentTransactionId)
+                                  .retry(3)
+                                  .build();
     }
 
-    private RollbackCommand composerRollback (Transaction.Id parentTransactionId) {
-        return RollbackCommand.builder()
-                              .processor(processorFactory.get(RollbackCommand.class))
-                              .parentTransactionId(parentTransactionId)
-                              .build();
-    }
-
-    private RollbackSuccessCommand composeRollbackSuccess (Transaction.Id parentTransactionId) {
-        return RollbackSuccessCommand.builder()
-                                     .processor(processorFactory.get(RollbackSuccessCommand.class))
+    private SuccessRollbackCommand composeRollbackSuccess (Transaction.Id parentTransactionId) {
+        return SuccessRollbackCommand.builder()
+                                     .processor(processorFactory.get(SuccessRollbackCommand.class))
                                      .parentTransactionId(parentTransactionId)
                                      .build();
     }

@@ -1,6 +1,6 @@
 package com.fan.transfer.services.tm.worker.model;
 
-import com.fan.transfer.domain.Account;
+import com.fan.transfer.domain.Transaction;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 @NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public abstract class FinalCommand extends Command {
-    private Account.Id from;
+public abstract class SuccessCommand extends Command implements HasParentId {
+    private Transaction.Id parentTransactionId;
+    public abstract SuccessCommand copy(int retry);
 }

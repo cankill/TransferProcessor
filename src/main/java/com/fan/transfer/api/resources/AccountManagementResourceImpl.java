@@ -6,11 +6,9 @@ import com.fan.transfer.api.mapping.GetBalanceResponseMapper;
 import com.fan.transfer.api.model.CreateAccountRequest;
 import com.fan.transfer.api.model.TransferRequest;
 import com.fan.transfer.domain.Account;
-import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.domain.User;
 import com.fan.transfer.services.AccountCommandManager;
 import com.fan.transfer.services.AccountQueryManager;
-import com.fan.transfer.services.ValidationService;
 import com.fan.transfer.services.tm.TransferCommandManager;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
@@ -29,19 +27,15 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
 
     private TransferCommandManager transferCommandManager;
 
-    private ValidationService validationService;
-
     private User user;
 
     @AssistedInject
     AccountManagementResourceImpl(AccountCommandManager accountCommandManager,
                                   AccountQueryManager accountQueryManager,
-                                  ValidationService validationService,
                                   TransferCommandManager transferCommandManager,
                                   @Assisted User user) {
         this.accountCommandManager = accountCommandManager;
         this.accountQueryManager = accountQueryManager;
-        this.validationService = validationService;
         this.transferCommandManager = transferCommandManager;
         this.user = user;
     }

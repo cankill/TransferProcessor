@@ -23,7 +23,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import javax.ws.rs.core.GenericType
 import javax.ws.rs.core.Response
 
 @UseModules(TestModule)

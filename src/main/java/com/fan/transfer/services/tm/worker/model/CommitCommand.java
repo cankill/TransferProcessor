@@ -1,6 +1,5 @@
 package com.fan.transfer.services.tm.worker.model;
 
-import com.fan.transfer.domain.Account;
 import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.services.tm.worker.processor.Processor;
 import lombok.EqualsAndHashCode;
@@ -12,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @NonFinal
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class CommitCommand extends Command {
+public class CommitCommand extends Command implements HasParentId {
     private Transaction.Id parentTransactionId;
     private Processor<CommitCommand> processor;
 

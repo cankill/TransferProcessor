@@ -8,11 +8,11 @@ import lombok.experimental.SuperBuilder;
 @Value
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class CreditCommand extends TransferCommand {
+public class CreditCommand extends TransferCommandI {
     private Processor<CreditCommand> processor;
 
     @Override
     public CommandReply execute() {
-        return processor.process(this);
+        return getProcessor().process(this);
     }
 }

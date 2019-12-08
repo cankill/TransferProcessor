@@ -1,6 +1,7 @@
 package com.fan.transfer.services.tm.worker.processor;
 
-import com.fan.transfer.domain.*;
+import com.fan.transfer.domain.Transaction;
+import com.fan.transfer.domain.TransactionType;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.worker.model.*;
 import lombok.extern.slf4j.Slf4j;
@@ -72,14 +73,16 @@ public class CommitProcessor implements Processor<CommitCommand> {
         return CommitCreditCommand.builder()
                                   .processor(processorFactory.get(CommitCreditCommand.class))
                                   .transactionId(creditSubTransaction.getId())
+                                  .from(creditSubTransaction.getFrom())
                                   .parentTransactionId(parentTransactionId)
                                   .build();
     }
 
     private CommandInterface composeCommitDebit (Transaction debitSubTransaction, Transaction.Id parentTransactionId) {
-        return DebitCreditCommand.builder()
-                                 .processor(processorFactory.get(DebitCreditCommand.class))
+        return CommitDebitCommand.builder()
+                                 .processor(processorFactory.get(CommitDebitCommand.class))
                                  .transactionId(debitSubTransaction.getId())
+                                 .from(debitSubTransaction.getFrom())
                                  .parentTransactionId(parentTransactionId)
                                  .build();
     }
@@ -88,6 +91,7 @@ public class CommitProcessor implements Processor<CommitCommand> {
         return RollbackCommand.builder()
                               .processor(processorFactory.get(RollbackCommand.class))
                               .parentTransactionId(parentTransactionId)
+                              .retry(3)
                               .build();
     }
 }

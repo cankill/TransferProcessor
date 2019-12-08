@@ -1,10 +1,8 @@
 @startuml
 skinparam dpi 300
-!define primary_key(x) <b>x</b>
-!define green(x) <color:green>x</color>
-!define red(x) <color:red>x</color>
-!define blue(x) <color:blue>x</color>
-!define not_null(x) <u>x</u>
+!define success(x) <color:green> x</color>
+!define failure(x) <color:red> x</color>
+!define implements(x) :<color:darksalmon> x</color>
 ' other tags available:
 ' <i></i>
 ' <back:COLOR></color>, where color is a color name or html color code
@@ -22,48 +20,48 @@ state commit_fork <<fork>>
 state commit_join <<join>>
 state CommitProcessor: Get sub-transactions\nrun Commit for each
 state RollbackProcessor: Get sub-transactions\nrun Rollback for each
-state PostRollBackProcessor: Check all sub-transactions status\nrollback main transaction
+state RollbackPostProcessor: Check all sub-transactions status\nrollback main transaction
 
-[*] --> TransferProcessor: green(TransferCommand)
+[*] --> TransferProcessor: success(TransferCommand)implements(HasFrom)
 TransferProcessor --> transfer_fork
-transfer_fork --> CreditProcessor : green(CreditCommand)
-transfer_fork --> DebitProcessor : green(DebitCommand)
+transfer_fork --> CreditProcessor : success(CreditCommand)implements(HasFrom)
+transfer_fork --> DebitProcessor : success(DebitCommand)implements(HasFrom)
 
-CreditProcessor --> transfer_join_succ: green(CommitCommand)
-DebitProcessor --> transfer_join_succ: green(CommitCommand)
+CreditProcessor --> transfer_join_succ: success(CommitCommand)implements(HasParentId)
+DebitProcessor --> transfer_join_succ: success(CommitCommand)implements(HasParentId)
 
 transfer_join_succ --> CommitProcessor
 CommitProcessor --> commit_fork
-commit_fork --> CommitDebitProcessor: green(CommitDebitCommand)
-commit_fork --> CommitCreditProcessor: green(CommitCreditCommand)
-CommitDebitProcessor --> commit_join: green(CommitSuccessCommand)
-CommitCreditProcessor --> commit_join: green(CommitSuccessCommand)
-commit_join --> PostCommitProcessor
-PostCommitProcessor --> [*]: green(null)
+commit_fork --> CommitDebitProcessor: success(CommitDebitCommand)implements(HasFrom)
+commit_fork --> CommitCreditProcessor: success(CommitCreditCommand)implements(HasFrom)
+CommitDebitProcessor --> commit_join: success(SuccessCommitCommand)implements(HasParentId)
+CommitCreditProcessor --> commit_join: success(SuccessCommitCommand)implements(HasParentId)
+commit_join --> CommitPostProcessor
+CommitPostProcessor --> [*]: success(null)
 
 transfer_join_fail --> RollbackProcessor
 RollbackProcessor --> rollback_fork
-rollback_fork --> RollbackDebitProcessor:  green(RollbackDebitCommand)
-rollback_fork --> RollbackCreditProcessor: green(RollbackCreditCommand)
+rollback_fork --> RollbackDebitProcessor:  success(RollbackDebitCommand)implements(HasFrom)
+rollback_fork --> RollbackCreditProcessor: success(RollbackCreditCommand)implements(HasFrom)
 
-RollbackDebitProcessor --> rollback_join: green(RollbackSuccessCommand)
-RollbackCreditProcessor --> rollback_join: green(RollbackSuccessCommand)
+RollbackDebitProcessor --> rollback_join: success(SuccessRollbackCommand)implements(HasParentId)
+RollbackCreditProcessor --> rollback_join: success(SuccessRollbackCommand)implements(HasParentId)
 
-rollback_join --> PostRollBackProcessor
-PostRollBackProcessor --> [*]: green(null)
+rollback_join --> RollbackPostProcessor
+RollbackPostProcessor --> [*]: success(null)
 
 ' Fail path
-'TransferProcessor -> [*]: red(null)
-CreditProcessor --> transfer_join_fail: red(RollbackCommand)
-DebitProcessor --> transfer_join_fail: red(RollbackCommand)
-
-CommitProcessor -> transfer_join_fail: red(RollbackCommand)
-CommitCreditProcessor -> CommitCreditProcessor: red(RetryCommand)
-CommitDebitProcessor -> CommitDebitProcessor: red(RetryCommand)
-PostCommitProcessor -> PostCommitProcessor: red(RetryCommand)
-
-RollbackProcessor -> RollbackProcessor: red(RetryCommand)
-RollbackCreditProcessor -> RollbackCreditProcessor: red(RetryCommand)
-RollbackDebitProcessor -> RollbackDebitProcessor: red(RetryCommand)
-PostRollBackProcessor -> PostRollBackProcessor: red(RetryCommand)
+'TransferProcessor -> [*]: failure(null)
+CreditProcessor --> transfer_join_fail: failure(RollbackCommand)implements(HasParentId)
+DebitProcessor --> transfer_join_fail: failure(RollbackCommand)implements(HasParentId)
+'
+'CommitProcessor --> transfer_join_fail: failure(RollbackCommand)
+'CommitCreditProcessor --> transfer_join_fail: failure(RollbackCommand)
+'CommitDebitProcessor --> transfer_join_fail: failure(RollbackCommand)
+'CommitPostProcessor --> CommitPostProcessor: failure(RetryCommand)
+'
+'RollbackProcessor -> RollbackProcessor: failure(RetryCommand)
+'RollbackCreditProcessor -> RollbackCreditProcessor: failure(RetryCommand)
+'RollbackDebitProcessor -> RollbackDebitProcessor: failure(RetryCommand)
+'RollbackPostProcessor -> RollbackPostProcessor: failure(RetryCommand)
 @enduml

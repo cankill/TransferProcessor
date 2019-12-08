@@ -15,7 +15,7 @@ import java.util.UUID;
  *    Base class for CreditProcessor and DebitProcessor.
  */
 @Slf4j
-public abstract class InitProcessor<T extends TransferCommand> implements Processor<T> {
+public abstract class InitProcessor<T extends TransferCommandI> implements Processor<T> {
     private final Repository<Transaction.Id, Transaction> transactionRepository;
     private final Repository<Account.Id, Account> accountRepository;
     private  final ProcessorFactory processorFactory;
@@ -62,7 +62,7 @@ public abstract class InitProcessor<T extends TransferCommand> implements Proces
                 if (transactionRepository.add(transaction)) {
                     // Move amount on hold
                     var newHold = account.getHold();
-                    newHold.add(new Hold(transactionId, transaction.getAmount()));
+                    newHold.add(new Hold(transactionId, transaction.getAmount(), TransactionStatus.PROGRESS));
                     // And Subtract from current balance
                     var newBalance = mapBalanceChange(currentBalance, transaction.getAmount());
                     var patch = Account.builder()

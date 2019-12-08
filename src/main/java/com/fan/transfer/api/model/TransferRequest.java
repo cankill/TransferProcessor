@@ -1,8 +1,6 @@
 package com.fan.transfer.api.model;
 
 import com.fan.transfer.domain.Account;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 

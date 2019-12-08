@@ -2,7 +2,8 @@ package com.fan.transfer.domain;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
-import lombok.*;
+import lombok.Builder;
+import lombok.Value;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,11 +36,11 @@ public class Transaction implements HasId<Transaction.Id> {
         }
     }
 
-    public static Predicate<Transaction> hasStatus (TransactionStatus status) {
+    public static Predicate<Transaction> byStatus (TransactionStatus status) {
         return transaction -> transaction.getStatus() == status;
     }
 
-    public static Predicate<Transaction> relatedToParent (Transaction.Id parentTransactionId) {
+    public static Predicate<Transaction> byParent (Transaction.Id parentTransactionId) {
         return transaction -> transaction.getParentId().equals(parentTransactionId);
     }
 }

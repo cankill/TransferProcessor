@@ -10,4 +10,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public abstract class Command implements CommandInterface {
     private Transaction.Id transactionId;
+    private int retry;
 }

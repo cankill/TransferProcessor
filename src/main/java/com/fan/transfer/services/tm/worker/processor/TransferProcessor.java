@@ -1,6 +1,8 @@
 package com.fan.transfer.services.tm.worker.processor;
 
-import com.fan.transfer.domain.*;
+import com.fan.transfer.domain.Transaction;
+import com.fan.transfer.domain.TransactionStatus;
+import com.fan.transfer.domain.TransactionType;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.worker.model.*;
 import lombok.extern.slf4j.Slf4j;

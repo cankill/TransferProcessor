@@ -19,7 +19,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
 
@@ -70,15 +73,9 @@ public class TransferProcessorModule extends AbstractModule {
     @Provides
     @Singleton
     ProcessorFactory getProcessorFactory (Injector injector) {
-        return injector.getInstance(ProcessorFactory.class);
+        return injector.getInstance(ProcessorFactory.class).init();
     }
-
-    @Provides
-    @Singleton
-    ValidationService getValidationService() {
-        return new ValidationServiceImpl();
-    }
-
+    
     @Provides
     @Singleton
     @Named("userRepository")
@@ -104,9 +101,7 @@ public class TransferProcessorModule extends AbstractModule {
     @Provides
     @Singleton
     TransferCommandManager provideTransactionCoordinator(Injector inject) {
-        TransferCommandManagerImpl tc = inject.getInstance(TransferCommandManagerImpl.class);
-        tc.init(16);
-        return tc;
+        return inject.getInstance(TransferCommandManagerImpl.class).init(16);
     }
 
     @Provides

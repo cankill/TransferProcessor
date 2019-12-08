@@ -4,7 +4,7 @@ import com.fan.transfer.domain.Account;
 import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.coordinator.model.CoordinatorDescriptor;
-import com.fan.transfer.services.tm.worker.*;
+import com.fan.transfer.services.tm.worker.BucketWorker;
 import com.fan.transfer.services.tm.worker.model.*;
 import com.fan.transfer.services.tm.worker.processor.CommitCreditProcessor;
 import com.fan.transfer.services.tm.worker.processor.CommitDebitProcessor;
@@ -23,22 +23,9 @@ import java.util.stream.IntStream;
 public class TransactionCoordinatorWorker implements Runnable {
     private final CoordinatorDescriptor tcDescriptor;
     private Map<Integer, WorkerProcessDescriptor> workers;
-    
-    private CommitCreditProcessor commitCreditProcessor;
-    private CommitDebitProcessor commitDebitProcessor;
-    private RollbackCreditProcessor rollbackCreditProcessor;
-    private RollbackDebitProcessor rollbackDebitProcessor;
 
-
-    public TransactionCoordinatorWorker (final CoordinatorDescriptor tcDescriptor,
-                                         final Repository<Transaction.Id, Transaction> transactionRepository,
-                                         final Repository<Account.Id, Account> accountRepository) {
+    public TransactionCoordinatorWorker (final CoordinatorDescriptor tcDescriptor) {
         this.tcDescriptor = tcDescriptor;
-
-        this.commitCreditProcessor = new CommitCreditProcessor(transactionRepository, accountRepository, this);
-        this.commitDebitProcessor = new CommitDebitProcessor(transactionRepository, accountRepository, this);
-        this.rollbackCreditProcessor = new RollbackCreditProcessor(transactionRepository, accountRepository, this);
-        this.rollbackDebitProcessor = new RollbackDebitProcessor(transactionRepository, accountRepository, this);
     }
 
     @Override
@@ -98,7 +85,12 @@ public class TransactionCoordinatorWorker implements Runnable {
     }
 
     private void sendCommandToWorker (CommandInterface command) {
-        var bucket = calculateBucketNumber(command.getFrom(), tcDescriptor.getBucketCount());
+        Object keySource =  command instanceof HasFrom
+            ? ((HasFrom) command).getFrom()
+            : ((HasParentId) command).getParentTransactionId();
+
+        int bucket = calculateBucketNumber(keySource, tcDescriptor.getBucketCount());
+
         var worker = workers.get(bucket);
         worker.getBucketDescriptor().getCommandsQueue().addLast(command);
         synchronized (worker.getBucketDescriptor()) {

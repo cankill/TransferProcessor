@@ -7,7 +7,6 @@ import com.fan.transfer.di.AccountManagementResourceFactory;
 import com.fan.transfer.domain.User;
 import com.fan.transfer.services.UserCommandManager;
 import com.fan.transfer.services.UserQueryManager;
-import com.fan.transfer.services.ValidationService;
 import com.google.inject.Inject;
 
 import javax.ws.rs.container.ResourceContext;
@@ -27,9 +26,6 @@ public class UserManagementResourceImpl implements UserManagementResource {
 
     @Inject
     private AccountManagementResourceFactory accountManagementResourceFactory;
-
-    @Inject
-    private ValidationService validationService;
 
     @Context
     private ResourceContext resourceContext;
