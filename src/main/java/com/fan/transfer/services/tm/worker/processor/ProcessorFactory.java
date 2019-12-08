@@ -10,7 +10,7 @@ import com.google.inject.name.Named;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ProcessorFactory {
+public class ProcessorFactory implements ProcessorFactoryInterface {
     @Inject
     @Named("transactionRepository")
     Repository<Transaction.Id, Transaction> transactionRepository;
@@ -39,6 +39,7 @@ public class ProcessorFactory {
         return this;
     }
 
+    @Override
     public <T extends CommandInterface> Processor<T>  get(Class<T> clazz) {
         return (Processor<T>) resolver.get(clazz);
     }

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -76,6 +77,11 @@ public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Reposi
 
     @Override
     public boolean update (I entityId, T entity) {
+        return update(entityId, entity, Collections.emptyList());
+    }
+
+    @Override
+    public boolean update (I entityId, T entity, List<String> ignoreFields) {
         if (entityId == null || entityId.getValue() == null || entity == null) {
             return false;
         }

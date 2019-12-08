@@ -3,31 +3,28 @@ package com.fan.transfer.api.handlers;
 import com.fan.transfer.domain.ErrorResponse;
 import com.fan.transfer.services.DbException;
 import com.fan.transfer.services.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
+@Slf4j
 @Produces({"application/json"})
 public class ApiExceptionHandler implements ExceptionMapper<Throwable> {
     @Override
     public Response toResponse (Throwable exception) {
         Response.Status status = Response.Status.INTERNAL_SERVER_ERROR;
-        String errorMessage = "Unknown error";
+        String errorMessage = exception.getLocalizedMessage();
 
         if (exception instanceof EntityNotFoundException) {
-            var ex = (EntityNotFoundException) exception;
-            errorMessage = ex.getLocalizedMessage();
             status = Response.Status.NOT_FOUND;
         } else if (exception instanceof IllegalArgumentException) {
-            var ex = (IllegalArgumentException) exception;
-            errorMessage = ex.getLocalizedMessage();
             status = Response.Status.BAD_REQUEST;
-        } else if (exception instanceof DbException) {
-            var ex = (DbException) exception;
-            errorMessage = ex.getLocalizedMessage();
         }
+
+        log.error("Request to API finished with failure '{}'", errorMessage);
 
         return Response
                 .status(status)

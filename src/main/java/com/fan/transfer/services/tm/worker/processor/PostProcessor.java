@@ -46,7 +46,7 @@ public class PostProcessor<T extends SuccessCommand> implements Processor<T> {
 
         if (subTransactions.size() == 2) {
             var patchStatus = Transaction.builder().status(TransactionStatus.DONE).build();
-            if (!transactionRepository.update(parentTransactionId, patchStatus)) {
+            if (!transactionRepository.update(parentTransactionId, patchStatus, List.of("children"))) {
                 return retry(command, retry);
             }
             log.debug("Transaction '{}' finished", parentTransactionId);

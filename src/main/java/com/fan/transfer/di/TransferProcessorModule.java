@@ -15,6 +15,7 @@ import com.fan.transfer.services.*;
 import com.fan.transfer.services.tm.TransferCommandManager;
 import com.fan.transfer.services.tm.TransferCommandManagerImpl;
 import com.fan.transfer.services.tm.worker.processor.ProcessorFactory;
+import com.fan.transfer.services.tm.worker.processor.ProcessorFactoryInterface;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -72,7 +73,7 @@ public class TransferProcessorModule extends AbstractModule {
 
     @Provides
     @Singleton
-    ProcessorFactory getProcessorFactory (Injector injector) {
+    ProcessorFactoryInterface getProcessorFactory (Injector injector) {
         return injector.getInstance(ProcessorFactory.class).init();
     }
     

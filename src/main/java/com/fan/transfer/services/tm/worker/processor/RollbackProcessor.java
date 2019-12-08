@@ -47,7 +47,7 @@ public class RollbackProcessor implements Processor<RollbackCommand> {
             }
 
             var patch = Transaction.builder().status(TransactionStatus.ROLLBACK).build();
-            transactionRepository.update(parentTransactionId, patch);
+            transactionRepository.update(parentTransactionId, patch, List.of("children"));
 
             var subTransactions = transactionRepository.getAllBy(byParent(parentTransactionId)
                                                                  .and(byStatus(TransactionStatus.DONE)

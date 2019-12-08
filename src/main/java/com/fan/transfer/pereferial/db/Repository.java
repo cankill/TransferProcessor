@@ -14,7 +14,9 @@ public interface Repository<I, T> {
 
     boolean add (T entity);
 
-    boolean update (I entityId, T account);
+    boolean update (I entityId, T entity);
+
+    boolean update (I entityId, T entity, List<String> ignoreFields);
 
     boolean remove (I entityId);
 

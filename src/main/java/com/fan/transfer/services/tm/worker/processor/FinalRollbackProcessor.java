@@ -53,7 +53,7 @@ public abstract class FinalRollbackProcessor<T extends RollbackCommandI> impleme
             if (account != null) {
                 // Update transaction in DB, start process of rollback
                 var patchRollback = Transaction.builder().status(TransactionStatus.ROLLBACK).build();
-                transactionRepository.update(command.getTransactionId(), patchRollback);
+                transactionRepository.update(command.getTransactionId(), patchRollback, List.of("children"));
                 
                 // Search transaction amount on Hold
                 var hold = account.getHold().stream()
@@ -86,7 +86,7 @@ public abstract class FinalRollbackProcessor<T extends RollbackCommandI> impleme
 
                 // Update transaction in DB, start process of rollback
                 var patchDone = Transaction.builder().status(TransactionStatus.DONE).build();
-                transactionRepository.update(command.getTransactionId(), patchDone);
+                transactionRepository.update(command.getTransactionId(), patchDone, List.of("children"));
 
                 return success(transaction.getParentId());
             }

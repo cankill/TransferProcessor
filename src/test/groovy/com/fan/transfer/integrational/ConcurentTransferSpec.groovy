@@ -27,7 +27,7 @@ import javax.ws.rs.core.Response
 
 @UseModules(TestModule)
 @Unroll
-class RestEndpointsSpec extends Specification {
+class ConcurentTransferSpec extends Specification {
     public static final String ENDPOINT_ADDRESS = "http://localhost:8080/v1"
     private static Server server;
     private static WebClient client;
@@ -52,6 +52,13 @@ class RestEndpointsSpec extends Specification {
     @Shared
     ObjectMapper objectMapper
 
+    private static userId = User.Id.builder().value("userId").build()
+    private static user = User.builder().id(userId).name("User Fan").email("filyaniny@gmail.com").build()
+    private static accountId1 = Account.Id.builder().value("accountId1").build()
+    private static account1 = Account.builder().id(accountId1).userId(userId).balance(BigDecimal.valueOf(10000)).build()
+    private static accountId2 = Account.Id.builder().value("accountId2").build()
+    private static account2 = Account.builder().id(accountId2).userId(userId).balance(BigDecimal.valueOf(20000)).build()
+
     def setupSpec() {
         server = cxfConfigurer.getServer()
 
@@ -68,10 +75,16 @@ class RestEndpointsSpec extends Specification {
     def setup() {
         def restClient = restClientFactory.create(ENDPOINT_ADDRESS)
         client = restClient.getClient()
+
+        userRepository.add(user)
+        accountRepository.add(account1)
+        accountRepository.add(account2)
     }
 
     def cleanup() {
         client.close()
+        userRepository.removeAll()
+        accountRepository.removeAll()
     }
 
     def "create account for user '#userId'"() {
@@ -96,7 +109,7 @@ class RestEndpointsSpec extends Specification {
 
         account1 = accountRepository.get(new Account.Id(accountId1.id))
         account2 = accountRepository.get(new Account.Id(accountId2.id))
-        
+
         expect:
         user.name == userName
         user.email == userEmail
@@ -127,42 +140,5 @@ class RestEndpointsSpec extends Specification {
         transferRequest << [
                 []
         ]
-    }
-
-    def "get '#userId' balance"() {
-        setup:
-        userRepository.add(user)
-        accountRepository.add(account)
-        accountRepository.add(account2)
-
-        client.path(path, userId, accountId)
-        Response resp = client.post(transferRequest)
-
-        expect:
-        resp.readEntity(Transaction.Id.class) == tsIds
-
-        where:
-        userId << ["userId1"]
-        user << [User.builder().id(new User.Id(userId)).build()]
-        accountId << ["accountId1"]
-        accountId2 << ["accountId2"]
-        account << [Account.builder().id(new Account.Id(accountId)).userId(new User.Id(userId)).balance(new BigDecimal(1000)).build()]
-        account2 << [Account.builder().id(new Account.Id(accountId2)).userId(new User.Id(userId)).balance(new BigDecimal(10)).build()]
-        path << ["/user/{userId}/account/{accountId}/transfer"]
-        transferRequest << [[from: accountId, to: accountId2, amount: 100.01]]
-        tsIds << ["123456"]
-    }
-
-    def "get unknown '#userId' balance"() {
-        setup:
-        client.path(path, accountId)
-        Response resp = client.get()
-
-        expect:
-        resp.readEntity(ErrorResponse.class) == error
-
-        where:
-        path                                     | accountId    || error
-        "/account/balance/{accountId}" | "accountId1" || ErrorResponse.builder().error("Account accountId1 was not found").build()
     }
 }

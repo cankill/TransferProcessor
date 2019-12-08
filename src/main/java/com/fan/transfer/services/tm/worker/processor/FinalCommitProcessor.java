@@ -50,7 +50,7 @@ public abstract class FinalCommitProcessor<T extends CommitCommandI> implements 
             if (account != null) {
                 // Update transaction in DB, start process of rollback
                 var patchRollback = Transaction.builder().status(TransactionStatus.ROLLBACK).build();
-                if(transactionRepository.update(command.getTransactionId(), patchRollback)) {
+                if(transactionRepository.update(command.getTransactionId(), patchRollback, List.of("children"))) {
                     // Search transaction amount on Hold
                     var newHold = account.getHold();
                     var hold = newHold.stream()
@@ -59,9 +59,9 @@ public abstract class FinalCommitProcessor<T extends CommitCommandI> implements 
                                                    .negate()))
                                       .findFirst();
 
-                    BigDecimal newBalance = account.getBalance();
-
                     if (hold.isPresent()) {
+                        BigDecimal newBalance = mapBalanceChange(account.getBalance(), hold.get().getAmount());
+
                         // Update Hold status
                         newHold.removeIf(Hold.byId(transaction.getId()));
                         newHold.add(Hold.builder()
@@ -83,7 +83,7 @@ public abstract class FinalCommitProcessor<T extends CommitCommandI> implements 
                     }
                     // Update transaction in DB, start process of rollback
                     var patchDone = Transaction.builder().status(TransactionStatus.DONE).build();
-                    transactionRepository.update(command.getTransactionId(), patchDone);
+                    transactionRepository.update(command.getTransactionId(), patchDone, List.of("children"));
 
                     return success(transaction.getParentId());
                 }

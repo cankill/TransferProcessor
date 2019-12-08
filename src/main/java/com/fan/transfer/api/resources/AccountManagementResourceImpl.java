@@ -14,6 +14,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 
 import javax.ws.rs.core.Response;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public class AccountManagementResourceImpl implements AccountManagementResource {
@@ -61,10 +62,30 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
 
     @Override
     public Response doTransfer (TransferRequest request) {
+        validateTransferRequest(request);
+
         transferCommandManager.transfer(request.getFrom(), request.getTo(), request.getAmount());
         return Response.status(Response.Status.OK).build();
     }
-    
+
+    private void validateTransferRequest (TransferRequest request) {
+        if(request.getFrom() == null) {
+            throw new IllegalArgumentException(String.format("TransferRequest %s should contains non empty field 'from'", request));
+        }
+
+        if(request.getTo() == null) {
+            throw new IllegalArgumentException(String.format("TransferRequest %s should contains non empty field 'to'", request));
+        }
+
+        if(request.getAmount() == null) {
+            throw new IllegalArgumentException(String.format("TransferRequest %s should contains non empty field 'amount'", request));
+        }
+
+        if(request.getAmount().compareTo(BigDecimal.ZERO) < 1) {
+            throw new IllegalArgumentException(String.format("TransferRequest %s should contains non negative field 'amount'", request));
+        }
+    }
+
     private Account.Id generateId () {
         return Account.Id.valueOf(UUID.randomUUID().toString());
     }

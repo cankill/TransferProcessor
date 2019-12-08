@@ -37,10 +37,10 @@ public class Transaction implements HasId<Transaction.Id> {
     }
 
     public static Predicate<Transaction> byStatus (TransactionStatus status) {
-        return transaction -> transaction.getStatus() == status;
+        return transaction -> status.equals(transaction.getStatus());
     }
 
     public static Predicate<Transaction> byParent (Transaction.Id parentTransactionId) {
-        return transaction -> transaction.getParentId().equals(parentTransactionId);
+        return transaction -> parentTransactionId !=null && parentTransactionId.equals(transaction.getParentId());
     }
 }
