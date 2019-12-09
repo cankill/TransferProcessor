@@ -1,11 +1,7 @@
 package com.fan.transfer.integrational
 
 import com.fan.transfer.api.CXFConfigurer
-import com.fan.transfer.api.model.CreateAccountResponse
-import com.fan.transfer.api.model.CreateUserResponse
 import com.fan.transfer.domain.Account
-import com.fan.transfer.domain.ErrorResponse
-import com.fan.transfer.domain.Transaction
 import com.fan.transfer.domain.User
 import com.fan.transfer.integrational.di.RestClientFactory
 import com.fan.transfer.integrational.di.TestModule
@@ -17,20 +13,16 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.google.inject.Inject
 import com.google.inject.name.Named
 import org.apache.cxf.endpoint.Server
-import org.apache.cxf.jaxrs.client.WebClient
 import spock.guice.UseModules
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import javax.ws.rs.core.Response
 
 @UseModules(TestModule)
 @Unroll
 class ConcurentTransferSpec extends Specification {
     public static final String ENDPOINT_ADDRESS = "http://localhost:8080/v1"
     private static Server server;
-    private static WebClient client;
 
     @Inject
     @Named("userRepository")
@@ -51,13 +43,19 @@ class ConcurentTransferSpec extends Specification {
     @Inject
     @Shared
     ObjectMapper objectMapper
+    User.Id userId
+    User user
+    def account1InitialBalance = BigDecimal.valueOf(30000)
+    Account.Id accountId1
+    Account account1
+    def account2InitialBalance = BigDecimal.valueOf(20000)
+    Account.Id accountId2
+    Account account2
+    def account3InitialBalance = BigDecimal.valueOf(10000)
+    Account.Id accountId3
+    Account account3
 
-    private static userId = User.Id.builder().value("userId").build()
-    private static user = User.builder().id(userId).name("User Fan").email("filyaniny@gmail.com").build()
-    private static accountId1 = Account.Id.builder().value("accountId1").build()
-    private static account1 = Account.builder().id(accountId1).userId(userId).balance(BigDecimal.valueOf(10000)).build()
-    private static accountId2 = Account.Id.builder().value("accountId2").build()
-    private static account2 = Account.builder().id(accountId2).userId(userId).balance(BigDecimal.valueOf(20000)).build()
+    def numberOfIterations = 100
 
     def setupSpec() {
         server = cxfConfigurer.getServer()
@@ -73,72 +71,89 @@ class ConcurentTransferSpec extends Specification {
     }
 
     def setup() {
-        def restClient = restClientFactory.create(ENDPOINT_ADDRESS)
-        client = restClient.getClient()
+        userId = User.Id.builder().value("userId").build()
+        user = User.builder().id(userId).name("User Fan").email("filyaniny@gmail.com").build()
+        accountId1 = Account.Id.builder().value("accountId1").build()
+        account1 = Account.builder().id(accountId1).userId(userId).balance(account1InitialBalance).build()
+        accountId2 = Account.Id.builder().value("accountId2").build()
+        account2 = Account.builder().id(accountId2).userId(userId).balance(account2InitialBalance).build()
+        accountId3 = Account.Id.builder().value("accountId3").build()
+        account3 = Account.builder().id(accountId3).userId(userId).balance(account3InitialBalance).build()
 
         userRepository.add(user)
         accountRepository.add(account1)
         accountRepository.add(account2)
+        accountRepository.add(account3)
     }
 
     def cleanup() {
-        client.close()
         userRepository.removeAll()
         accountRepository.removeAll()
     }
 
     def "create account for user '#userId'"() {
         setup:
-        client.path(userPath)
-        Response userResp = client.post(userCreateRequest)
-        def userId = userResp.readEntity(CreateUserResponse.class)
-        User user = userRepository.get(new User.Id(userId.id))
+        def restClient1 = restClientFactory.create(ENDPOINT_ADDRESS)
+        def client1 = restClient1.getClient()
+        client1.path(transferPath, userId.value, accountId1.value)
 
-        client.path(accountPath, userId.id)
+        def restClient2 = restClientFactory.create(ENDPOINT_ADDRESS)
+        def client2 = restClient2.getClient()
+        client2.path(transferPath, userId.value, accountId2.value)
 
-        Response accountResp1 = client.post(accountCreateRequest[0])
-        def accountId1 = accountResp1.readEntity(CreateAccountResponse)
-        Account account1 = accountRepository.get(new Account.Id(accountId1.id))
+        def restClient3 = restClientFactory.create(ENDPOINT_ADDRESS)
+        def client3 = restClient3.getClient()
+        client3.path(transferPath, userId.value, accountId3.value)
 
-        Response accountResp2 = client.post(accountCreateRequest[1])
-        def accountId2 = accountResp2.readEntity(CreateAccountResponse)
-        Account account2 = accountRepository.get(new Account.Id(accountId2.id))
+        def thread1 = new Thread(new Runnable() {
+            @Override
+            void run() {
+                (1..numberOfIterations).each {
+                    client1.post([from: accountId1, to: accountId2, amount: 30.07])
+                }
+            }
+        })
 
-        client.path(transferPath, accountId1.id)
-        Response transferResp = client.post([from: accountId1.id, to: accountId2.id, amount: 14.01])
+        def thread2 = new Thread(new Runnable() {
+            @Override
+            void run() {
+                (1..numberOfIterations).each {
+                    client2.post([from: accountId2, to: accountId3, amount: 20.07])
+                }
+            }
+        })
 
-        account1 = accountRepository.get(new Account.Id(accountId1.id))
-        account2 = accountRepository.get(new Account.Id(accountId2.id))
+        def thread3 = new Thread(new Runnable() {
+            @Override
+            void run() {
+                (1..numberOfIterations).each {
+                    client3.post([from: accountId3, to: accountId1, amount: 10.07])
+                    client3.post([from: accountId3, to: accountId1, amount: account1InitialBalance * 2])
+                }
+            }
+        })
 
-        expect:
-        user.name == userName
-        user.email == userEmail
-        user.phone == userPhone
+        thread1.start()
+        thread2.start()
+        thread3.start()
+
+        thread1.join()
+        thread2.join()
+        thread3.join()
 
         sleep(3000)
 
-        account1.balance == accountBalance1 - 14.01
-        account1.currency.currencyCode == accountCurrency
+        def account1result = accountRepository.get(accountId1)
+        def account2result = accountRepository.get(accountId2)
+        def account3result = accountRepository.get(accountId3)
 
-        account2.balance == accountBalance2 + 14.01
-        account2.currency.currencyCode == accountCurrency
+        expect:
+        account1result.balance == account1InitialBalance - 30.07 * numberOfIterations + 10.07 * numberOfIterations
+        account2result.balance == account2InitialBalance - 20.07 * numberOfIterations + 30.07 * numberOfIterations
+        account3result.balance == account3InitialBalance - 10.07 * numberOfIterations + 20.07 * numberOfIterations
+
 
         where:
-        userPath << ["/user"]
-        userName << ["AndrewFan"]
-        userEmail << ["filyaniny@gmail.com"]
-        userPhone << ["+35797648671"]
-        userCreateRequest << [[name: userName, email: userEmail, phone: userPhone]]
-        accountPath << ["/{userId}/account"]
-        accountBalance1 << [100.09]
-        accountBalance2 << [33.77]
-        accountCurrency << ["USD"]
-        accountCreateRequest << [
-                [[balance: accountBalance1, currency: accountCurrency], [balance: accountBalance2, currency: accountCurrency]]
-        ]
-        transferPath << ["/{accountId}/transfer"]
-        transferRequest << [
-                []
-        ]
+        transferPath << ["/user/{userId}/account/{accountId}/transfer"]
     }
 }

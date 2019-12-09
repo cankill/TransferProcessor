@@ -5,6 +5,9 @@ import com.fan.transfer.domain.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
+/**
+ * Mapstruct mapper interface to map from API Request model to Domain model
+ */
 @Mapper
 public interface CreateUserResponseMapper {
     CreateUserResponseMapper INSTANCE = Mappers.getMapper(CreateUserResponseMapper.class);

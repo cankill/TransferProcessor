@@ -11,6 +11,11 @@ import java.util.Currency;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Domain model for business implementation.
+ * An Account to store balance, currency, link to User owning this Account.
+ * Contains a list of Holds (instrument to support transactions)
+ */
 @Value
 @Builder
 @AllArgsConstructor

@@ -18,68 +18,43 @@ hide stereotypes
 
 ' entities
 
-Table(sc_deployment, "sc_deployment") {
-    primary_key(id) uuid
-    not_null(modified) timestamp
-    not_null(parameters) jsonb
+Table(user, "User") {
+    primary_key(id) User.Id
+    name String
+    email String
+    phone String
 }
 
-Table(sc_deployment_workset, "sc_deployment_workset") {
-    primary_key(id) text
-    primary_key(deployment) uuid
+Table(account, "Account") {
+    primary_key(id) Account.Id
+    not_null(userId) String
+    currency Currency
+    balance BigDecimal
+    not_null(hold) Hold.Id
 }
 
-sc_deployment -- sc_deployment_workset : "id==deployment"
-
-Table(sc_deployment_state, "sc_deployment_state") {
-    primary_key(deployment_id) uuid
-    not_null(state_id) text
-    not_null(modified) timestamp
+Table(hold, "Hold") {
+    primary_key(id) Hold.Id
+    not_null(transactionId) Transaction.Id
+    not_null(amount) BigDecimal
+    not_null(status) TransactionStatus
 }
 
-sc_deployment -- sc_deployment_state : "id==deployment_id"
-
-Table(sc_deployment_attempt, "sc_deployment_attempt") {
-    primary_key(attempt_id) bigint
-    not_null(host_id) text
-    not_null(deployment_id) uuid
-    start_time timestamp
-    stop_time timestamp
-    result text
+Table(transaction, "Transaction") {
+    primary_key(id) Transaction.Id
+    parentId Transaction.Id
+    from Account.Id
+    to Account.Id
+    not_null(amount) BigDecimal
+    not_null(type) TransactionType
+    not_null(dateTime) LocalDateTime
+    not_null(status) TransactionStatus
+    children Transaction.Id
 }
 
-sc_deployment "1" --> "0..N" sc_deployment_attempt : "id==deployment_id"
-
-
-Table(sc_workstation_state, "sc_workstation_state") {
-    primary_key(host_id) text
-    deployment_id uuid
-    updater_version text
-    agent_version text
-    not_null(stage_id) text
-    event_status text
-    last_boot_time timestamp
-    not_null(modified) timestamp
-}
-
-sc_deployment "1" --> "0..N" sc_workstation_state : "id==deployment_id"
-sc_workstation_state "1" --> "0..N" sc_deployment_attempt : "host_id==host_id"
-
-Table(sc_workstation_status, "sc_workstation_status") {
-    host_id text
-    not_null(status) jsonb
-    not_null(modified) timestamp
-}
-
-sc_workstation_state "1" --> "0..N" sc_workstation_status : "host_id==host_id"
-
-
-Table(sc_id_hostname, "sc_id_hostname") {
-    host_id text
-    not_null(parameters) jsonb
-    not_null(modified) timestamp
-}
-
-
-
+user "1" <-- "0..N" account : "userId"
+account "1" --> "0..N" hold : "holdId"
+transaction "1" <-- "1" hold: "transactionId"
+transaction "0..N" --> "1" transaction: "parentId"
+transaction "1" --> "0..N" transaction: "children"
 @enduml

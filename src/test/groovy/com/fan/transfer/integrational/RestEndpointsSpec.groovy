@@ -1,114 +1,43 @@
 package com.fan.transfer.integrational
 
-import com.fan.transfer.api.CXFConfigurer
+
 import com.fan.transfer.api.model.CreateAccountResponse
 import com.fan.transfer.api.model.CreateUserResponse
+import com.fan.transfer.api.model.GetBalanceResponse
 import com.fan.transfer.domain.Account
 import com.fan.transfer.domain.ErrorResponse
-import com.fan.transfer.domain.Transaction
+import com.fan.transfer.domain.TransactionStatus
 import com.fan.transfer.domain.User
-import com.fan.transfer.integrational.di.RestClientFactory
-import com.fan.transfer.integrational.di.TestModule
-import com.fan.transfer.integrational.utils.MapJsonSerializer
-import com.fan.transfer.pereferial.db.Repository
-import com.fasterxml.jackson.core.Version
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.google.inject.Inject
-import com.google.inject.name.Named
-import org.apache.cxf.endpoint.Server
-import org.apache.cxf.jaxrs.client.WebClient
-import spock.guice.UseModules
-import spock.lang.Shared
-import spock.lang.Specification
 import spock.lang.Unroll
 
 import javax.ws.rs.core.Response
 
-@UseModules(TestModule)
 @Unroll
-class RestEndpointsSpec extends Specification {
-    public static final String ENDPOINT_ADDRESS = "http://localhost:8080/v1"
-    private static Server server;
-    private static WebClient client;
-
-    @Inject
-    @Named("userRepository")
-    Repository<User.Id, User> userRepository;
-
-    @Inject
-    @Named("accountRepository")
-    Repository<Account.Id, Account> accountRepository;
-
-    @Inject
-    @Shared
-    RestClientFactory restClientFactory
-
-    @Inject
-    @Shared
-    CXFConfigurer cxfConfigurer
-
-    @Inject
-    @Shared
-    ObjectMapper objectMapper
-
-    def setupSpec() {
-        server = cxfConfigurer.getServer()
-
-        SimpleModule module = new SimpleModule("MyTestModule", new Version(1, 0, 0, null));
-        module.addSerializer(LinkedHashMap.class, new MapJsonSerializer());
-        objectMapper.registerModule(module);
-    }
-
-    def cleanupSpec() {
-        server.stop()
-        server.destroy()
-    }
-
+class RestEndpointsSpec extends MainIntegrationalSpecification {
     def setup() {
         def restClient = restClientFactory.create(ENDPOINT_ADDRESS)
         client = restClient.getClient()
+        userRepository.removeAll()
+        accountRepository.removeAll()
+        transactionRepository.removeAll()
     }
 
     def cleanup() {
         client.close()
     }
 
-    def "create account for user '#userId'"() {
+    def "create User '#userName'"() {
         setup:
         client.path(userPath)
         Response userResp = client.post(userCreateRequest)
-        def userId = userResp.readEntity(CreateUserResponse.class)
-        User user = userRepository.get(new User.Id(userId.id))
+        def response = userResp.readEntity(CreateUserResponse.class)
+        def userId = new User.Id(response.id)
+        def entity = userRepository.get(userId)
 
-        client.path(accountPath, userId.id)
-
-        Response accountResp1 = client.post(accountCreateRequest[0])
-        def accountId1 = accountResp1.readEntity(CreateAccountResponse)
-        Account account1 = accountRepository.get(new Account.Id(accountId1.id))
-
-        Response accountResp2 = client.post(accountCreateRequest[1])
-        def accountId2 = accountResp2.readEntity(CreateAccountResponse)
-        Account account2 = accountRepository.get(new Account.Id(accountId2.id))
-
-        client.path(transferPath, accountId1.id)
-        Response transferResp = client.post([from: accountId1.id, to: accountId2.id, amount: 14.01])
-
-        account1 = accountRepository.get(new Account.Id(accountId1.id))
-        account2 = accountRepository.get(new Account.Id(accountId2.id))
-        
         expect:
-        user.name == userName
-        user.email == userEmail
-        user.phone == userPhone
-
-        sleep(3000)
-
-        account1.balance == accountBalance1 - 14.01
-        account1.currency.currencyCode == accountCurrency
-
-        account2.balance == accountBalance2 + 14.01
-        account2.currency.currencyCode == accountCurrency
+        entity.name == userName
+        entity.email == userEmail
+        entity.phone == userPhone
 
         where:
         userPath << ["/user"]
@@ -116,53 +45,162 @@ class RestEndpointsSpec extends Specification {
         userEmail << ["filyaniny@gmail.com"]
         userPhone << ["+35797648671"]
         userCreateRequest << [[name: userName, email: userEmail, phone: userPhone]]
-        accountPath << ["/{userId}/account"]
-        accountBalance1 << [100.09]
-        accountBalance2 << [33.77]
-        accountCurrency << ["USD"]
-        accountCreateRequest << [
-                [[balance: accountBalance1, currency: accountCurrency], [balance: accountBalance2, currency: accountCurrency]]
-        ]
-        transferPath << ["/{accountId}/transfer"]
-        transferRequest << [
-                []
-        ]
     }
 
-    def "get '#userId' balance"() {
+    def "create Account for User"() {
+        setup:
+        userRepository.add(user)
+        client.path(accountPath, userId.value)
+        Response accountResp = client.post(accountCreateRequest)
+        def response = accountResp.readEntity(CreateAccountResponse.class)
+        def accountId = new Account.Id(response.id)
+        def entity = accountRepository.get(accountId)
+
+        expect:
+        entity.balance == accountBalance
+        entity.currency == Currency.getInstance(accountCurrency)
+        entity.userId == userId
+
+        where:
+        userId << [new User.Id("userId")]
+        user << [new User(userId, "AndrewFan", "filyaniny@gmail.com", "+35797648671")]
+        accountPath << ["/user/{userId}/account"]
+        accountBalance << [33.77]
+        accountCurrency << ["USD"]
+        accountCreateRequest << [[balance: accountBalance, currency: accountCurrency]]
+    }
+
+    def "Do transfer from Account: '#accountIds[0]' to Account: '#accountIds[1]'"() {
+        setup:
+        userRepository.add(user)
+        accounts.each { accountRepository.add(it) }
+        
+        client.path(transferPath, userId.value, accountIds[0].value)
+        def transferResp = client.post(transferRequest)
+        waitProcessingToFinish(300)
+        def account1 = accountRepository.get(accountIds[0])
+        def account2 = accountRepository.get(accountIds[1])
+
+        expect:
+        transferResp.status == Response.Status.OK.getStatusCode()
+        account1.balance == accountBalances[0] - 14.01
+        account2.balance == accountBalances[1] + 14.01
+
+        where:
+        userId << [new User.Id("userId")]
+        user << [new User(userId, "AndrewFan", "filyaniny@gmail.com", "+35797648671")]
+        accountIds << [[new Account.Id("account1"), new Account.Id("account2")]]
+        accountBalances << [[100.09, 33.77]]
+        accountCurrency << [Currency.getInstance("USD")]
+        accounts << [[new Account(accountIds[0], userId, accountCurrency, accountBalances[0], []),
+                      new Account(accountIds[1], userId, accountCurrency, accountBalances[1], [])]]
+        transferPath << ["/user/{userId}/account/{accountId}/transfer"]
+        transferRequest << [[from: accountIds[0].value, to: accountIds[1].value, amount: 14.01]]
+    }
+
+    def "Do transfer from Account: '#accountIds[0]' to Account: '#accountIds[1]' with not enough balance"() {
+        setup:
+        userRepository.add(user)
+        accounts.each { accountRepository.add(it) }
+
+        client.path(transferPath, userId.value, accountIds[0].value)
+        def transferResp = client.post(transferRequest)
+        waitProcessingToFinish(300)
+        def account1 = accountRepository.get(accountIds[0])
+        def account2 = accountRepository.get(accountIds[1])
+
+        expect:
+        transferResp.status == Response.Status.OK.getStatusCode()
+        account1.balance == accountBalances[0]
+        account1.hold.size() == 0
+        account2.balance == accountBalances[1]
+        account2.hold.size() == 1
+        account2.hold[0].getStatus() == TransactionStatus.DONE
+        account2.hold[0].amount == transferRequest.amount
+        
+        where:
+        userId << [new User.Id("userId")]
+        user << [new User(userId, "AndrewFan", "filyaniny@gmail.com", "+35797648671")]
+        accountIds << [[new Account.Id("account1"), new Account.Id("account2")]]
+        accountBalances << [[14.00, 33.77]]
+        accountCurrency << [Currency.getInstance("USD")]
+        accounts << [[new Account(accountIds[0], userId, accountCurrency, accountBalances[0], []),
+                      new Account(accountIds[1], userId, accountCurrency, accountBalances[1], [])]]
+        transferPath << ["/user/{userId}/account/{accountId}/transfer"]
+        transferRequest << [[from: accountIds[0].value, to: accountIds[1].value, amount: 14.01]]
+    }
+
+    def "Do transfer from Account: '#accountIds[0]' to same Account"() {
+        setup:
+        userRepository.add(user)
+        accounts.each { accountRepository.add(it) }
+
+        client.path(transferPath, userId.value, accountIds[0].value)
+        def transferResp = client.post(transferRequest)
+
+        expect:
+        transferResp.status == Response.Status.BAD_REQUEST.getStatusCode()
+
+        where:
+        userId << [new User.Id("userId")]
+        user << [new User(userId, "AndrewFan", "filyaniny@gmail.com", "+35797648671")]
+        accountIds << [[new Account.Id("account1"), new Account.Id("account2")]]
+        accountBalances << [[14.00, 33.77]]
+        accountCurrency << [Currency.getInstance("USD")]
+        accounts << [[new Account(accountIds[0], userId, accountCurrency, accountBalances[0], []),
+                      new Account(accountIds[1], userId, accountCurrency, accountBalances[1], [])]]
+        transferPath << ["/user/{userId}/account/{accountId}/transfer"]
+        transferRequest << [[from: accountIds[0].value, to: accountIds[0].value, amount: 1.01]]
+    }
+
+    def "Get '#accountId' Balance"() {
         setup:
         userRepository.add(user)
         accountRepository.add(account)
-        accountRepository.add(account2)
 
-        client.path(path, userId, accountId)
-        Response resp = client.post(transferRequest)
+        client.path(balancePath, userId.value, accountId.value)
+        def balanceResp = client.get()
+        def balance = balanceResp.readEntity(GetBalanceResponse.class)
 
         expect:
-        resp.readEntity(Transaction.Id.class) == tsIds
+        balanceResp.status == Response.Status.OK.getStatusCode()
+        balance == expectedBalance
 
         where:
-        userId << ["userId1"]
-        user << [User.builder().id(new User.Id(userId)).build()]
-        accountId << ["accountId1"]
-        accountId2 << ["accountId2"]
-        account << [Account.builder().id(new Account.Id(accountId)).userId(new User.Id(userId)).balance(new BigDecimal(1000)).build()]
-        account2 << [Account.builder().id(new Account.Id(accountId2)).userId(new User.Id(userId)).balance(new BigDecimal(10)).build()]
-        path << ["/user/{userId}/account/{accountId}/transfer"]
-        transferRequest << [[from: accountId, to: accountId2, amount: 100.01]]
-        tsIds << ["123456"]
+        userId << [new User.Id("userId")]
+        user << [new User(userId, "AndrewFan", "filyaniny@gmail.com", "+35797648671")]
+        accountId << [new Account.Id("account1")]
+        accountBalance << [100.09]
+        accountCurrency << [Currency.getInstance("USD")]
+        account << [new Account(accountId, userId, accountCurrency, accountBalance, [])]
+        balancePath << ["/user/{userId}/account/{accountId}/balance"]
+        expectedBalance << [new GetBalanceResponse(accountId.value, accountBalance.toString(), accountCurrency.getCurrencyCode())]
     }
 
     def "get unknown '#userId' balance"() {
         setup:
-        client.path(path, accountId)
+        client.path(path, userId, accountId)
         Response resp = client.get()
 
         expect:
         resp.readEntity(ErrorResponse.class) == error
 
         where:
-        path                                     | accountId    || error
-        "/account/balance/{accountId}" | "accountId1" || ErrorResponse.builder().error("Account accountId1 was not found").build()
+        path                                         | userId    | accountId    || error
+        "/user/{userId}/account/{accountId}/balance" | "userId1" | "accountId1" || ErrorResponse.builder().error("User 'userId1' was not found").build()
+    }
+
+    def "get unknown '#accountId' balance"() {
+        setup:
+        userRepository.add(new User(new User.Id(userId), "User Name", "userEmail@some.com", "+0userPhoneNumber"))
+        client.path(path, userId, accountId)
+        Response resp = client.get()
+
+        expect:
+        resp.readEntity(ErrorResponse.class) == error
+
+        where:
+        path                                         | userId    | accountId    || error
+        "/user/{userId}/account/{accountId}/balance" | "userId1" | "accountId1" || ErrorResponse.builder().error("Account 'accountId1' was not found").build()
     }
 }

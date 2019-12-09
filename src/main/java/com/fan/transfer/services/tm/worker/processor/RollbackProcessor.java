@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import static com.fan.transfer.domain.Transaction.byParent;
 import static com.fan.transfer.domain.Transaction.byStatus;
+import static java.lang.Thread.sleep;
 
 @Slf4j
 public class RollbackProcessor implements Processor<RollbackCommand> {
@@ -38,6 +39,7 @@ public class RollbackProcessor implements Processor<RollbackCommand> {
      */
     @Override
     public CommandReply process (RollbackCommand command) {
+        log.debug("Processing command '{}'", command);
         var retry = command.getRetry() -1;
         Transaction.Id parentTransactionId = command.getParentTransactionId();
         Transaction parent = transactionRepository.get(parentTransactionId);

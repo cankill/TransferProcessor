@@ -9,6 +9,9 @@ import org.mapstruct.factory.Mappers;
 
 import static org.mapstruct.NullValueMappingStrategy.RETURN_DEFAULT;
 
+/**
+ * Mapstruct mapper interface to map from API Request model to Domain model
+ */
 @Mapper(nullValueMappingStrategy = RETURN_DEFAULT)
 public interface CreateAccountRequestMapper {
     CreateAccountRequestMapper INSTANCE = Mappers.getMapper(CreateAccountRequestMapper.class);

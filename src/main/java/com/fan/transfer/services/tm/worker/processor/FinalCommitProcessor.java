@@ -5,7 +5,10 @@ import com.fan.transfer.domain.Hold;
 import com.fan.transfer.domain.Transaction;
 import com.fan.transfer.domain.TransactionStatus;
 import com.fan.transfer.pereferial.db.Repository;
-import com.fan.transfer.services.tm.worker.model.*;
+import com.fan.transfer.services.tm.worker.model.CommandReply;
+import com.fan.transfer.services.tm.worker.model.CommitCommandI;
+import com.fan.transfer.services.tm.worker.model.RollbackCommand;
+import com.fan.transfer.services.tm.worker.model.SuccessCommitCommand;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -40,6 +43,7 @@ public abstract class FinalCommitProcessor<T extends CommitCommandI> implements 
      */
     @Override
     public CommandReply process (T command) {
+        log.debug("Processing command '{}'", command);
         var transaction = transactionRepository.get(command.getTransactionId());
         if (transaction != null) {
             if (transaction.getStatus() == DONE) {

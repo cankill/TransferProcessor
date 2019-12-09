@@ -18,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.fasterxml.jackson.core.JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN;
+
 @Slf4j
 public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Repository<I, T> {
     private static final List<String> EXCLUDE_FIELDS_FOR_UPDATE = List.of("id");
@@ -28,6 +30,7 @@ public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Reposi
     public InMemoryTable () {
         this.objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.enable(WRITE_BIGDECIMAL_AS_PLAIN);
     }
 
     @Override

@@ -3,6 +3,10 @@ package com.fan.transfer.domain;
 import lombok.Builder;
 import lombok.Value;
 
+/**
+ * Domain model for business implementation.
+ * A User to store identities
+ */
 @Value
 @Builder
 public class User implements HasId<User.Id> {

@@ -2,7 +2,10 @@ package com.fan.transfer.services.tm.worker.processor;
 
 import com.fan.transfer.domain.*;
 import com.fan.transfer.pereferial.db.Repository;
-import com.fan.transfer.services.tm.worker.model.*;
+import com.fan.transfer.services.tm.worker.model.CommandReply;
+import com.fan.transfer.services.tm.worker.model.CommitCommand;
+import com.fan.transfer.services.tm.worker.model.RollbackCommand;
+import com.fan.transfer.services.tm.worker.model.TransferCommandI;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -40,6 +43,7 @@ public abstract class InitProcessor<T extends TransferCommandI> implements Proce
      */
     @Override
     public CommandReply process (T command) {
+        log.debug("Processing command '{}'", command);
         Transaction.Id parentTransactionId = command.getTransactionId();
         Transaction.Id transactionId = null;
         var account = accountRepository.get(command.getFrom());
@@ -90,6 +94,7 @@ public abstract class InitProcessor<T extends TransferCommandI> implements Proce
                                                            .processor(processorFactory.get(RollbackCommand.class))
                                                            .transactionId(transactionId)
                                                            .parentTransactionId(parentTransactionId)
+                                                           .retry(3)
                                                            .build()))
                            .status(CommandReply.Status.FAILURE)
                            .build();

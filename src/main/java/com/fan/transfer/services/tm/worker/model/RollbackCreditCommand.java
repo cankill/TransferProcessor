@@ -17,7 +17,7 @@ public class RollbackCreditCommand extends RollbackCommandI implements HasFrom {
     public CommandReply execute() {
         return getProcessor().process(this);
     }
-    
+
     public RollbackCreditCommand copy(int retry) {
         return RollbackCreditCommand.builder()
                                     .transactionId(getTransactionId())

@@ -12,7 +12,9 @@
     </appender>
 
     <logger name="com.fan.transfer" level="DEBUG"/>
-    <logger name="org.apache.cxf" level="TRACE"/>
+<!--    <logger name="spock.lang" level="TRACE"/>-->
+<!--    <logger name="org.apache.cxf" level="TRACE"/>-->
+<!--    <logger name="org.apache.cxf.jaxrs.client" level="TRACE"/>-->
 
     <root level="INFO">
         <appender-ref ref="ASYNCSTDOUT"/>

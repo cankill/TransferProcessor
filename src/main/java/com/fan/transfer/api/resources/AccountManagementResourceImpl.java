@@ -77,6 +77,10 @@ public class AccountManagementResourceImpl implements AccountManagementResource 
             throw new IllegalArgumentException(String.format("TransferRequest %s should contains non empty field 'to'", request));
         }
 
+        if(request.getFrom().equals(request.getTo())) {
+            throw new IllegalArgumentException(String.format("TransferRequest %s should not be for the same Account ('from' != 'to')", request));
+        }
+
         if(request.getAmount() == null) {
             throw new IllegalArgumentException(String.format("TransferRequest %s should contains non empty field 'amount'", request));
         }

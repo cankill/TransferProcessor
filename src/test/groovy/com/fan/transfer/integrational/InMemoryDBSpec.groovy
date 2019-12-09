@@ -45,9 +45,9 @@ class InMemoryDBSpec extends Specification {
         expect:
         def repoUser = userRepository.get(userId)
         repoUser == expectedUser
-        def repoAccount = accountRepository.get(repoUser.getAccounts().get(0).getId())
+        def repoAccount = accountRepository.get(accountId)
         repoAccount == expectedAccount
-        def repoTransaction = transactionRepository.get(repoAccount.getTransactions().get(0).getId())
+        def repoTransaction = transactionRepository.get(transactionId)
         repoTransaction == expectedTransaction
 
         where:
@@ -79,6 +79,28 @@ class InMemoryDBSpec extends Specification {
         expectedUser << [User.builder().id(userId).build()]
         userUpdate << [User.builder().id(new User.Id("userIdWrong")).name("Andrew FAN").build()]
         updatedUser << [User.builder().id(userId).name("Andrew FAN").build()]
+    }
+
+    def "update Account"() {
+        setup:
+        accountRepository.add(account)
+
+        expect:
+        accountRepository.update(accountId, accountUpdate)
+        def updatedAccount = accountRepository.get(accountId)
+        updatedAccount == expectedAccount
+
+        where:
+        userId << [new User.Id("andrewFan"),
+                   new User.Id("andrewFan")]
+        accountId << [new Account.Id("acountId1"),
+                      new Account.Id("acountId1")]
+        account << [Account.builder().id(accountId).userId(userId).build(),
+                    Account.builder().id(accountId).userId(userId).build()]
+        accountUpdate << [Account.builder().balance(new BigDecimal("28.99")).build(),
+                          Account.builder().id(new Account.Id("changedId")).build()]
+        expectedAccount << [Account.builder().id(accountId).userId(userId).balance(new BigDecimal("28.99")).build(),
+                            Account.builder().id(accountId).userId(userId).build()]
     }
 
     def "get All Users"() {

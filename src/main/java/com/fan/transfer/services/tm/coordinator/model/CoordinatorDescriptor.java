@@ -7,6 +7,9 @@ import lombok.Value;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+/**
+ * Mmodel to agregate common resources for threads.
+ */
 @Value
 @Builder
 public class CoordinatorDescriptor {

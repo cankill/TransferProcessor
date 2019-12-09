@@ -6,7 +6,6 @@ import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.coordinator.TransactionCoordinatorWorker;
 import com.fan.transfer.services.tm.coordinator.model.CoordinatorDescriptor;
 import com.fan.transfer.services.tm.worker.model.TransferCommand;
-import com.fan.transfer.services.tm.worker.processor.ProcessorFactory;
 import com.fan.transfer.services.tm.worker.processor.ProcessorFactoryInterface;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;

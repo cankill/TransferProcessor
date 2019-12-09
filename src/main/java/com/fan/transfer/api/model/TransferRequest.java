@@ -6,6 +6,10 @@ import lombok.Value;
 
 import java.math.BigDecimal;
 
+/**
+ * Representation model for API.
+ * Request to transfer money from Account to other Account
+ */
 @Value
 @Builder
 public class TransferRequest {

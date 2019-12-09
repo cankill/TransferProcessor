@@ -33,9 +33,11 @@ public class BucketWorker implements Runnable {
         boolean hadReplies = false;
         while (!descriptor.getCommandsQueue().isEmpty() && batchSize > 0) {
             CommandInterface command = descriptor.getCommandsQueue().pollFirst();
-            var reply = command.execute();
-            descriptor.getTcDescriptor().getRepliesQueue().addLast(reply);
-            hadReplies = true;
+            if(command != null) {
+                var reply = command.execute();
+                descriptor.getTcDescriptor().getRepliesQueue().addLast(reply);
+                hadReplies = true;
+            }
             batchSize --;
         }
 
@@ -50,7 +52,7 @@ public class BucketWorker implements Runnable {
         synchronized (descriptor) {
             while (descriptor.queuesAreEmpty()) {
                 log.debug("Worker process's '{}' queues are empty, go to wait state", descriptor.getName());
-                descriptor.wait(5*60*1000);
+                descriptor.wait(5L * 60L * 1000L);
             }
         }
     }

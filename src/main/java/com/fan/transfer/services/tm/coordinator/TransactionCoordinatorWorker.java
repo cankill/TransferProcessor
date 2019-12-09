@@ -1,15 +1,8 @@
 package com.fan.transfer.services.tm.coordinator;
 
-import com.fan.transfer.domain.Account;
-import com.fan.transfer.domain.Transaction;
-import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.coordinator.model.CoordinatorDescriptor;
 import com.fan.transfer.services.tm.worker.BucketWorker;
 import com.fan.transfer.services.tm.worker.model.*;
-import com.fan.transfer.services.tm.worker.processor.CommitCreditProcessor;
-import com.fan.transfer.services.tm.worker.processor.CommitDebitProcessor;
-import com.fan.transfer.services.tm.worker.processor.RollbackCreditProcessor;
-import com.fan.transfer.services.tm.worker.processor.RollbackDebitProcessor;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +16,7 @@ import java.util.stream.IntStream;
 public class TransactionCoordinatorWorker implements Runnable {
     private final CoordinatorDescriptor tcDescriptor;
     private Map<Integer, WorkerProcessDescriptor> workers;
-
+    
     public TransactionCoordinatorWorker (final CoordinatorDescriptor tcDescriptor) {
         this.tcDescriptor = tcDescriptor;
     }
@@ -79,7 +72,7 @@ public class TransactionCoordinatorWorker implements Runnable {
         synchronized (tcDescriptor) {
             while (tcDescriptor.queuesAreEmpty()) {
                 log.debug("Transaction Coordinator process's '{}' queues are empty, go to wait state", tcDescriptor.getName());
-                tcDescriptor.wait(5*60*1000);
+                tcDescriptor.wait(5L * 60L * 1000L);
             }
         }
     }

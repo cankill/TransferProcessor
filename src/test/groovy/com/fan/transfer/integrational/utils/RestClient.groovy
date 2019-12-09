@@ -17,7 +17,8 @@ class RestClient implements RestClientInterface {
         client = WebClient.create(endpoint, [jacksonJsonProvider])
         WebClient.getConfig(client).getRequestContext().put("use.async.http.conduit", Boolean.TRUE)
         HTTPConduit conduit = (HTTPConduit) WebClient.getConfig(client).getConduit()
-        conduit.getClient().setReceiveTimeout(150000)
+        conduit.getClient().setReceiveTimeout(15000000)
+        conduit.getClient().setAsyncExecuteTimeout(15000000)
         client.accept(MediaType.APPLICATION_JSON_TYPE)
         client.replaceHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_TYPE)
     }

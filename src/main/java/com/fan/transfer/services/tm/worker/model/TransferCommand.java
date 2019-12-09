@@ -17,7 +17,7 @@ public class TransferCommand extends Command  implements HasFrom {
    private Account.Id from;
    private Account.Id to;
    private BigDecimal amount;
-   
+
    private Processor<TransferCommand> processor;
 
    @Override

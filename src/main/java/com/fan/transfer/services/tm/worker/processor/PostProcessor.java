@@ -38,13 +38,17 @@ public class PostProcessor<T extends SuccessCommand> implements Processor<T> {
      */
     @Override
     public CommandReply process (T command) {
+        log.debug("Processing command '{}'", command);
         int retry = command.getRetry();
         Transaction.Id parentTransactionId = command.getParentTransactionId();
 
         var subTransactions = transactionRepository.getAllBy(byParent(parentTransactionId)
-                                                             .and(byStatus(TransactionStatus.DONE)));
+                .and(byStatus(TransactionStatus.DONE)));
 
-        if (subTransactions.size() == 2) {
+        var finishedSubTransactions = transactionRepository.getAllBy(byParent(parentTransactionId)
+                                                                        .and(byStatus(TransactionStatus.DONE)));
+
+        if (subTransactions.size() == finishedSubTransactions.size()) {
             var patchStatus = Transaction.builder().status(TransactionStatus.DONE).build();
             if (!transactionRepository.update(parentTransactionId, patchStatus, List.of("children"))) {
                 return retry(command, retry);

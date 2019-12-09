@@ -11,6 +11,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * Domain model for business implementation.
+ * A Transaction to store parent/child relationship, Account from and to, amount.
+ */
 @Value
 @Builder
 public class Transaction implements HasId<Transaction.Id> {

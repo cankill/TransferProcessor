@@ -42,6 +42,7 @@ public abstract class FinalRollbackProcessor<T extends RollbackCommandI> impleme
      */
     @Override
     public CommandReply process (T command) {
+        log.debug("Processing command '{}'", command);
         var retry = command.getRetry() -1;
         var transaction = transactionRepository.get(command.getTransactionId());
         if (transaction != null) {

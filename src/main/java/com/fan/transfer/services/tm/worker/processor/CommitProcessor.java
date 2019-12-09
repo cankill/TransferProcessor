@@ -34,6 +34,7 @@ public class CommitProcessor implements Processor<CommitCommand> {
      */
     @Override
     public CommandReply process (CommitCommand command) {
+        log.debug("Processing command '{}'", command);
         Transaction.Id parentTransactionId = command.getParentTransactionId();
         Transaction parent = transactionRepository.get(parentTransactionId);
         if(parent != null) {
