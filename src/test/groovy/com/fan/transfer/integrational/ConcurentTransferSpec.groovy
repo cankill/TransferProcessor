@@ -18,19 +18,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
-@UseModules(TestModule)
 @Unroll
-class ConcurentTransferSpec extends Specification {
+class ConcurentTransferSpec extends HelperSpecification {
     public static final String ENDPOINT_ADDRESS = "http://localhost:8080/v1"
     private static Server server;
-
-    @Inject
-    @Named("userRepository")
-    Repository<User.Id, User> userRepository;
-
-    @Inject
-    @Named("accountRepository")
-    Repository<Account.Id, Account> accountRepository;
 
     @Inject
     @Shared
@@ -91,8 +82,9 @@ class ConcurentTransferSpec extends Specification {
         accountRepository.removeAll()
     }
 
-    def "create account for user '#userId'"() {
-        setup:
+    // Transfer money concurrently cyclic A -> B -> C -> A, different amount
+    def "Transfer money concurrently"() {
+        setup: "Spawn 3 threads to transfer (A -> B), (B -> C), (C -> A, C -> A amount greater than balance)"
         def restClient1 = restClientFactory.create(ENDPOINT_ADDRESS)
         def client1 = restClient1.getClient()
         client1.path(transferPath, userId.value, accountId1.value)
@@ -141,13 +133,13 @@ class ConcurentTransferSpec extends Specification {
         thread2.join()
         thread3.join()
 
-        sleep(3000)
+        waitProcessingToFinish(30)
 
         def account1result = accountRepository.get(accountId1)
         def account2result = accountRepository.get(accountId2)
         def account3result = accountRepository.get(accountId3)
 
-        expect:
+        expect: "As a cycle count is known and the amount of transfer is known we can predict a final balances for accounts"
         account1result.balance == account1InitialBalance - 30.07 * numberOfIterations + 10.07 * numberOfIterations
         account2result.balance == account2InitialBalance - 20.07 * numberOfIterations + 30.07 * numberOfIterations
         account3result.balance == account3InitialBalance - 10.07 * numberOfIterations + 20.07 * numberOfIterations

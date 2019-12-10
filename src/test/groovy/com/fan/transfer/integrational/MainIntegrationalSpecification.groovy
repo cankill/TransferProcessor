@@ -21,27 +21,11 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
-@UseModules(TestModule)
-class MainIntegrationalSpecification extends Specification {
+class MainIntegrationalSpecification extends HelperSpecification {
     protected static final String ENDPOINT_ADDRESS = "http://localhost:8080/v1"
     protected static Server server;
     protected static WebClient client;
-
-    @Inject
-    @Named("userRepository")
-    @Shared
-    Repository<User.Id, User> userRepository;
-
-    @Inject
-    @Shared
-    @Named("accountRepository")
-    Repository<Account.Id, Account> accountRepository;
-
-    @Inject
-    @Shared
-    @Named("transactionRepository")
-    Repository<Transaction.Id, Transaction> transactionRepository;
-
+    
     @Inject
     @Shared
     RestClientFactory restClientFactory
@@ -65,15 +49,5 @@ class MainIntegrationalSpecification extends Specification {
     def cleanupSpec() {
         server.stop()
         server.destroy()
-    }
-
-    void waitProcessingToFinish(int sleepFor) {
-        Closure<Boolean> checkTransactionsStatus = { sleepTime ->
-            def transactions = transactionRepository.getAllBy({ trx -> trx.getStatus() != TransactionStatus.DONE })
-            sleep(sleepTime)
-            !transactions.isEmpty()
-        }
-
-        while (checkTransactionsStatus(sleepFor)) continue
     }
 }

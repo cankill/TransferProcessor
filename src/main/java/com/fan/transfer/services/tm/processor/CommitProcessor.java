@@ -1,6 +1,7 @@
 package com.fan.transfer.services.tm.processor;
 
 import com.fan.transfer.domain.Transaction;
+import com.fan.transfer.domain.TransactionStatus;
 import com.fan.transfer.domain.TransactionType;
 import com.fan.transfer.pereferial.db.Repository;
 import com.fan.transfer.services.tm.command.*;
@@ -38,27 +39,29 @@ public class CommitProcessor implements Processor<CommitCommand> {
         Transaction.Id parentTransactionId = command.getParentTransactionId();
         Transaction parent = transactionRepository.get(parentTransactionId);
         if(parent != null) {
-            Transaction.Id childTransactionId = command.getTransactionId();
-            var newChildren = parent.getChildren();
-            newChildren.add(childTransactionId);
-            var newParentTransaction = Transaction.builder().children(newChildren).build();
-            if(transactionRepository.update(parentTransactionId, newParentTransaction)) {
-                if(newChildren.size() == 2) {
-                    log.debug("Transaction '{}' could be committed", parentTransactionId);
-                    var subTransactions = transactionRepository.getAll(newChildren);
-                    if(subTransactions.size() ==2) {
-                        var commands = subTransactions.stream().map(subTransaction ->
-                            subTransaction.getType() == TransactionType.CREDIT
-                            ? composeCommitCredit(subTransaction, parentTransactionId)
-                            : composeCommitDebit(subTransaction, parentTransactionId)).collect(Collectors.toList());
-                        return CommandReply.builder()
-                                .next(commands)
-                                .status(CommandReply.Status.SUCCESS)
-                                .build();
+            if(parent.getStatus() != TransactionStatus.ROLLBACK) {
+                Transaction.Id childTransactionId = command.getTransactionId();
+                var newChildren = parent.getChildren();
+                newChildren.add(childTransactionId);
+                var newParentTransaction = Transaction.builder().children(newChildren).build();
+                if (transactionRepository.update(parentTransactionId, newParentTransaction)) {
+                    if (newChildren.size() == 2) {
+                        log.debug("Transaction '{}' could be committed", parentTransactionId);
+                        var subTransactions = transactionRepository.getAll(newChildren);
+                        if (subTransactions.size() == 2) {
+                            var commands = subTransactions.stream().map(subTransaction ->
+                                    subTransaction.getType() == TransactionType.CREDIT
+                                        ? composeCommitCredit(subTransaction, parentTransactionId)
+                                        : composeCommitDebit(subTransaction, parentTransactionId)).collect(Collectors.toList());
+                            return CommandReply.builder()
+                                               .next(commands)
+                                               .status(CommandReply.Status.SUCCESS)
+                                               .build();
+                        }
+                    } else {
+                        log.debug("Waiting to all participant to finish. Wait for: '{}'", 2 - newChildren.size());
+                        return CommandReply.builder().status(CommandReply.Status.SUCCESS).build();
                     }
-                } else {
-                    log.debug("Waiting to all participant to finish. Wait for: '{}'", 2 - newChildren.size());
-                    return CommandReply.builder().status(CommandReply.Status.SUCCESS).build();
                 }
             }
         }

@@ -55,20 +55,21 @@ public class RollbackProcessor implements Processor<RollbackCommand> {
                                                                  .and(byStatus(TransactionStatus.DONE)
                                                                       .negate()));
 
-            // All subTransactions are in status Done. Go Done parent transaction.
-            if(subTransactions.isEmpty()) {
-                return goToPostRollback(parentTransactionId);
+            // Check if all subTransactions are registered in parent.
+            if(subTransactions.size() < 2) {
+                log.debug("Waiting to all participant to finish. Wait for: '{}'", 2 - subTransactions.size());
+                return CommandReply.builder().status(CommandReply.Status.SUCCESS).build();
             }
 
             var commands = subTransactions.stream().map(subTransaction ->
                                                         subTransaction.getType() == TransactionType.CREDIT
-                                                        ? composeRollbackCredit(subTransaction, parentTransactionId)
-                                                        : composeRollbackDebit(subTransaction, parentTransactionId)).collect(Collectors.toList());
+                                                            ? composeRollbackCredit(subTransaction, parentTransactionId)
+                                                            : composeRollbackDebit(subTransaction, parentTransactionId)).collect(Collectors.toList());
 
             return CommandReply.builder()
-                    .next(commands)
-                    .status(CommandReply.Status.SUCCESS)
-                    .build();
+                               .next(commands)
+                               .status(CommandReply.Status.SUCCESS)
+                               .build();
         }
 
         log.error("Parent Transaction '{}' state change failed.", parentTransactionId);

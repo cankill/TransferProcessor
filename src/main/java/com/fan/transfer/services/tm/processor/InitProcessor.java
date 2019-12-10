@@ -48,22 +48,22 @@ public abstract class InitProcessor<T extends TransferCommandI> implements Proce
         Transaction.Id transactionId = null;
         var account = accountRepository.get(command.getFrom());
         if (account != null) {
-            var currentBalance = account.getBalance();
-            // If balance is enough to debit can proceed
-            if (balanceIsEnough(currentBalance, command.getAmount())) {
-                transactionId = generateId();
-                // Store transaction in DB, start process of preCommit
-                var transaction = Transaction.builder()
-                                                .id(transactionId)
-                                                .parentId(parentTransactionId)
-                                                .from(command.getFrom())
-                                                .to(command.getTo())
-                                                .amount(command.getAmount())
-                                                .type(hintTransactionType())
-                                                .dateTime(LocalDateTime.now(ZoneOffset.UTC))
-                                                .status(TransactionStatus.PROGRESS)
-                                             .build();
-                if (transactionRepository.add(transaction)) {
+            transactionId = generateId();
+            // Store transaction in DB, start process of preCommit
+            var transaction = Transaction.builder()
+                                         .id(transactionId)
+                                         .parentId(parentTransactionId)
+                                         .from(command.getFrom())
+                                         .to(command.getTo())
+                                         .amount(command.getAmount())
+                                         .type(hintTransactionType())
+                                         .dateTime(LocalDateTime.now(ZoneOffset.UTC))
+                                         .status(TransactionStatus.PROGRESS)
+                                         .build();
+            if (transactionRepository.add(transaction)) {
+                var currentBalance = account.getBalance();
+                // If balance is enough to debit can proceed
+                if (balanceIsEnough(currentBalance, command.getAmount())) {
                     // Move amount on hold
                     var newHold = account.getHold();
                     newHold.add(new Hold(transactionId, transaction.getAmount(), TransactionStatus.PROGRESS));

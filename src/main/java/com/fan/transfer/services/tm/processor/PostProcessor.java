@@ -42,8 +42,7 @@ public class PostProcessor<T extends SuccessCommand> implements Processor<T> {
         int retry = command.getRetry();
         Transaction.Id parentTransactionId = command.getParentTransactionId();
 
-        var subTransactions = transactionRepository.getAllBy(byParent(parentTransactionId)
-                .and(byStatus(TransactionStatus.DONE)));
+        var subTransactions = transactionRepository.getAllBy(byParent(parentTransactionId));
 
         var finishedSubTransactions = transactionRepository.getAllBy(byParent(parentTransactionId)
                                                                         .and(byStatus(TransactionStatus.DONE)));
