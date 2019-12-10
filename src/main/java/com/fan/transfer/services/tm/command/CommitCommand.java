@@ -7,6 +7,10 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 
+/**
+ * Command to Commit a Transaction.
+ * Sending from Credit/Debit processor 
+ */
 @Value
 @NonFinal
 @SuperBuilder

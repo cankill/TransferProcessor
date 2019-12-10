@@ -20,6 +20,11 @@ import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.core.JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN;
 
+/**
+ * Simple implementation for InMemoryDB backed by ConcurrentHashMap
+ * @param <I> Type for Keys
+ * @param <T> Type for Values
+ */
 @Slf4j
 public class InMemoryTable<I extends IsId, T extends HasId<I>> implements Repository<I, T> {
     private static final List<String> EXCLUDE_FIELDS_FOR_UPDATE = List.of("id");

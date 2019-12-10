@@ -5,7 +5,9 @@ import lombok.Value;
 
 /**
  * Domain model for business implementation.
- * A User to store identities
+ * A User to store identities.
+ * Not implemented in this solution: name, email and phone
+ * can be alternative identity for transfer procedure (transfer by phone etc.)
  */
 @Value
 @Builder
