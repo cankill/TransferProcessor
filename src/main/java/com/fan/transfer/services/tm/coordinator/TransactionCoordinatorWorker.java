@@ -1,5 +1,9 @@
 package com.fan.transfer.services.tm.coordinator;
 
+import com.fan.transfer.services.tm.command.CommandInterface;
+import com.fan.transfer.services.tm.command.CommandReply;
+import com.fan.transfer.services.tm.command.HasFrom;
+import com.fan.transfer.services.tm.command.HasParentId;
 import com.fan.transfer.services.tm.coordinator.model.CoordinatorDescriptor;
 import com.fan.transfer.services.tm.worker.BucketWorker;
 import com.fan.transfer.services.tm.worker.model.*;
@@ -12,6 +16,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * Main Transaction Coordinator thread.
+ * Spawns a Workers pool on first run.
+ * Controls Command distribution over Buckets.
+ * Distribute reply commands from Workers over Buckets.
+ * Contains a Map of bucketId -> workers
+ */
 @Slf4j
 public class TransactionCoordinatorWorker implements Runnable {
     private final CoordinatorDescriptor tcDescriptor;
@@ -95,6 +106,9 @@ public class TransactionCoordinatorWorker implements Runnable {
         return Math.abs((key.hashCode() & 0x7fffffff) % bucketCount);
     }
 
+    /**
+     * Inner helper for aggregate information about spawned workers.
+     */
     @Value
     @AllArgsConstructor
     public static class WorkerProcessDescriptor {

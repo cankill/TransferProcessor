@@ -1,11 +1,15 @@
 package com.fan.transfer.services.tm.worker;
 
 import com.fan.transfer.services.tm.worker.model.BucketDescriptor;
-import com.fan.transfer.services.tm.worker.model.CommandInterface;
+import com.fan.transfer.services.tm.command.CommandInterface;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-
+/**
+ * Worker logic to execute incoming Commands in separate Thread.
+ * Each command in a worker is executed sequentially,
+ * so modify processes for same Account has no race condition.
+ */
 @Slf4j
 public class BucketWorker implements Runnable {
     @Getter
