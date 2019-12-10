@@ -62,6 +62,9 @@ Reply:
 ```
 
 ## Transfer money between two accounts
+
+POST /v1/user/{userId}/account/{AccountId}/transfer
+
 Body:
 ```json
 {
@@ -70,3 +73,4 @@ Body:
   "amount": 100.01
 }
 ```
+As transfer process is implemented as asynchronous actions, the result of API call is just a result of putting Command into queue. 
